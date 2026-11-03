@@ -31,3 +31,4 @@ export interface SourceScrapeConfig {
 export interface INewsScraper {
   scrape(source: SourceScrapeConfig): Promise<ScrapeResult>;
 }
+

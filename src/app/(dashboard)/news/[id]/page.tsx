@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { CategoryBadge } from "@/components/shared/category-badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MOCK_NEWS } from "@/features/news/mocks/mock-news";
+import { prisma } from "@/lib/db/prisma";
 
 async function NewsDetailContent({
   paramsPromise,
@@ -22,7 +22,41 @@ async function NewsDetailContent({
   paramsPromise: Promise<{ id: string }>;
 }) {
   const { id } = await paramsPromise;
-  const news = MOCK_NEWS.find((n) => n.id === id) || MOCK_NEWS[0];
+
+  let news = null;
+  try {
+    news = await prisma.news.findUnique({
+      where: { id },
+      include: {
+        source: true,
+        category: true,
+      },
+    });
+  } catch {
+    // Error loading from db
+  }
+
+  if (!news) {
+    return (
+      <div className="space-y-6">
+        <Link href="/news">
+          <Button variant="ghost" size="sm" className="gap-2 text-slate-500">
+            <ArrowLeft className="h-4 w-4" />
+            Kembali ke News Explorer
+          </Button>
+        </Link>
+        <Card className="p-8 text-center bg-white dark:bg-slate-900 rounded-xl">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+            Artikel Tidak Ditemukan
+          </h2>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+            Artikel dengan ID &quot;{id}&quot; belum terdaftar di basis data atau
+            telah dihapus.
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -41,12 +75,14 @@ async function NewsDetailContent({
       {/* Page Header */}
       <PageHeader
         title={news.title}
-        description={`Terbit pada ${news.publishedAt} &bull; Penulis: ${news.author}`}
+        description={`Terbit pada ${news.publishedAt ? new Date(news.publishedAt).toLocaleDateString("id-ID") : "Tanggal tidak tersedia"}`}
         badge={
-          <CategoryBadge
-            name={news.categoryName}
-            slug={news.categorySlug}
-          />
+          news.category ? (
+            <CategoryBadge
+              name={news.category.name}
+              slug={news.category.slug}
+            />
+          ) : undefined
         }
       >
         <a
@@ -56,7 +92,7 @@ async function NewsDetailContent({
         >
           <Button size="sm" className="gap-2 bg-teal-600 text-white hover:bg-teal-700">
             <ExternalLink className="h-4 w-4" />
-            Buka Berita Asli di {news.sourceName}
+            Buka Berita Asli di {news.source?.name}
           </Button>
         </a>
       </PageHeader>
@@ -69,46 +105,58 @@ async function NewsDetailContent({
             <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
               <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                 <Globe className="h-4 w-4 text-slate-400" />
-                {news.sourceName}
+                {news.source?.name || "Portal Berita"}
               </span>
               <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
                 <MapPin className="h-4 w-4 text-teal-600" />
-                {news.locationName} ({news.locationLevel})
+                {news.locationName || "Kota Medan"} ({news.locationLevel || "KOTA"})
               </span>
-              <span className="flex items-center gap-1.5">
-                <Calendar className="h-4 w-4 text-slate-400" />
-                {news.publishedAt}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <User className="h-4 w-4 text-slate-400" />
-                {news.author}
-              </span>
+              {news.publishedAt && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-slate-400" />
+                  {new Date(news.publishedAt).toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
+              )}
+              {news.author && (
+                <span className="flex items-center gap-1.5">
+                  <User className="h-4 w-4 text-slate-400" />
+                  {news.author}
+                </span>
+              )}
             </div>
           </Card>
 
           {/* Excerpt and Content */}
           <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-5 dark:border-slate-800 dark:bg-slate-900">
-            <div className="rounded-lg border border-teal-200/60 bg-teal-50/50 p-4 dark:border-teal-900/40 dark:bg-teal-950/20">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-teal-900 dark:text-teal-300 mb-1.5">
-                Ringkasan Intisari (Lead Summary):
-              </h2>
-              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
-                {news.description}
-              </p>
-            </div>
+            {news.description && (
+              <div className="rounded-lg border border-teal-200/60 bg-teal-50/50 p-4 dark:border-teal-900/40 dark:bg-teal-950/20">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-teal-900 dark:text-teal-300 mb-1.5">
+                  Ringkasan Intisari (Lead Summary):
+                </h2>
+                <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                  {news.description}
+                </p>
+              </div>
+            )}
 
-            <div className="space-y-3 pt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <h3 className="font-semibold text-slate-900 dark:text-white">
-                Cuplikan Isi Berita:
-              </h3>
-              <p>{news.content}</p>
-            </div>
+            {news.content && (
+              <div className="space-y-3 pt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                <h3 className="font-semibold text-slate-900 dark:text-white">
+                  Cuplikan Isi Berita:
+                </h3>
+                <p>{news.content}</p>
+              </div>
+            )}
 
             <div className="border-t border-slate-100 pt-4 flex items-center justify-between dark:border-slate-800">
               <span className="text-xs text-slate-400">
-                Skor Relevansi Algoritma:{" "}
+                Status Relevansi:{" "}
                 <strong className="text-slate-700 dark:text-slate-300">
-                  {Math.round(news.relevanceScore * 100)}%
+                  {news.isRelevant ? "Terverifikasi Relevan" : "Umum"}
                 </strong>
               </span>
               <a
@@ -117,7 +165,7 @@ async function NewsDetailContent({
                 rel="noopener noreferrer"
                 className="text-xs font-medium text-teal-700 hover:underline flex items-center gap-1 dark:text-teal-400"
               >
-                Baca kelanjutan artikel di portal asli &rarr;
+                Baca artikel lengkap di portal asli &rarr;
               </a>
             </div>
           </Card>
@@ -133,7 +181,7 @@ async function NewsDetailContent({
 
             <div className="mt-4 space-y-3.5 text-xs">
               <div>
-                <span className="text-slate-400 block mb-0.5">ID Internal Berita:</span>
+                <span className="text-slate-400 block mb-0.5">ID Internal Database:</span>
                 <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-mono text-slate-800 dark:bg-slate-800 dark:text-slate-200">
                   {news.id}
                 </code>

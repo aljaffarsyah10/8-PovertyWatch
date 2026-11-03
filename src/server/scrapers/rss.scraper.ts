@@ -96,3 +96,4 @@ export class RssScraper implements INewsScraper {
     return { items, errors };
   }
 }
+

@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { PageHeader } from "@/components/layout/page-header";
 import { CategoryBadge } from "@/components/shared/category-badge";
 import { EmptyState } from "@/components/shared/empty-state";
+import { ErrorState } from "@/components/shared/error-state";
+import { TableRowSkeleton } from "@/components/shared/loading-skeleton";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,69 +18,127 @@ import {
   RotateCcw,
   LayoutGrid,
   List,
-  Check,
 } from "lucide-react";
-import { MOCK_NEWS } from "@/features/news/mocks/mock-news";
-import { MOCK_CATEGORIES } from "@/features/categories/mocks/mock-categories";
-import { MOCK_SOURCES } from "@/features/sources/mocks/mock-sources";
+import { apiFetch } from "@/lib/api-client";
+
+interface NewsItem {
+  id: string;
+  title: string;
+  url: string;
+  normalizedUrl: string;
+  description?: string;
+  locationName?: string;
+  locationLevel?: string;
+  publishedAt?: string;
+  source?: { id: string; name: string };
+  category?: { id: string; name: string; slug: string };
+}
+
+interface CategoryOption {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+interface SourceOption {
+  id: string;
+  name: string;
+  type: string;
+}
 
 export default function NewsExplorerPage() {
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [sources, setSources] = useState<SourceOption[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedSource, setSelectedSource] = useState<string>("ALL");
   const [selectedLocation, setSelectedLocation] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "relevance">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [viewMode, setViewMode] = useState<"table" | "grid">("table");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [exportedSuccess, setExportedSuccess] = useState<boolean>(false);
-  const itemsPerPage = 5;
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const [totalCount, setTotalCount] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Unique locations from data
-  const locations = useMemo(() => {
-    const set = new Set<string>();
-    MOCK_NEWS.forEach((n) => {
-      if (n.locationName) set.add(n.locationName);
-    });
-    return Array.from(set);
+  const [refreshIndex, setRefreshIndex] = useState<number>(0);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadOptions() {
+      try {
+        const [catRes, srcRes] = await Promise.all([
+          apiFetch<CategoryOption[]>("/api/categories"),
+          apiFetch<SourceOption[]>("/api/sources"),
+        ]);
+        if (!ignore) {
+          if (catRes.data) setCategories(catRes.data);
+          if (srcRes.data) setSources(srcRes.data);
+        }
+      } catch {
+        // Options fallback
+      }
+    }
+    loadOptions();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
-  // Filter & Search Logic
-  const filteredNews = useMemo(() => {
-    return MOCK_NEWS.filter((item) => {
-      const query = searchQuery.toLowerCase().trim();
-      const matchQuery =
-        !query ||
-        item.title.toLowerCase().includes(query) ||
-        item.description.toLowerCase().includes(query) ||
-        item.locationName.toLowerCase().includes(query);
+  useEffect(() => {
+    let ignore = false;
+    async function loadNews() {
+      try {
+        const params = new URLSearchParams();
+        params.set("page", currentPage.toString());
+        params.set("limit", "10");
+        params.set("sortBy", sortBy);
 
-      const matchCategory =
-        selectedCategory === "ALL" || item.categoryId === selectedCategory;
+        if (searchQuery.trim()) params.set("search", searchQuery.trim());
+        if (selectedCategory !== "ALL") params.set("categoryId", selectedCategory);
+        if (selectedSource !== "ALL") params.set("sourceId", selectedSource);
+        if (selectedLocation !== "ALL") params.set("location", selectedLocation);
 
-      const matchSource =
-        selectedSource === "ALL" || item.sourceId === selectedSource;
+        const res = await apiFetch<NewsItem[]>(`/api/news?${params.toString()}`);
 
-      const matchLocation =
-        selectedLocation === "ALL" || item.locationName === selectedLocation;
-
-      return matchQuery && matchCategory && matchSource && matchLocation;
-    }).sort((a, b) => {
-      if (sortBy === "relevance") {
-        return b.relevanceScore - a.relevanceScore;
+        if (!ignore) {
+          if (res.data) {
+            setNews(res.data);
+          }
+          if (res.meta) {
+            setTotalCount(res.meta.total || 0);
+            setTotalPages(res.meta.totalPages || 1);
+          }
+        }
+      } catch (err: unknown) {
+        if (!ignore) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Gagal memuat daftar berita dari backend."
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
       }
-      if (sortBy === "oldest") {
-        return a.publishedAt.localeCompare(b.publishedAt);
-      }
-      return b.publishedAt.localeCompare(a.publishedAt);
-    });
-  }, [searchQuery, selectedCategory, selectedSource, selectedLocation, sortBy]);
+    }
 
-  // Pagination calculation
-  const totalPages = Math.ceil(filteredNews.length / itemsPerPage) || 1;
-  const paginatedNews = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredNews.slice(start, start + itemsPerPage);
-  }, [filteredNews, currentPage]);
+    loadNews();
+    return () => {
+      ignore = true;
+    };
+  }, [
+    currentPage,
+    searchQuery,
+    selectedCategory,
+    selectedSource,
+    selectedLocation,
+    sortBy,
+    refreshIndex,
+  ]);
 
   const handleResetFilters = () => {
     setSearchQuery("");
@@ -89,41 +149,23 @@ export default function NewsExplorerPage() {
     setCurrentPage(1);
   };
 
-  // Client-side CSV Exporter
+  const handleRetry = () => {
+    setLoading(true);
+    setError(null);
+    setRefreshIndex((prev) => prev + 1);
+  };
+
   const handleExportCSV = () => {
-    const headers = [
-      "ID",
-      "Judul",
-      "Kategori",
-      "Sumber",
-      "Lokasi",
-      "Tanggal Publikasi",
-      "URL Asli",
-    ];
-    const rows = filteredNews.map((n) => [
-      `"${n.id}"`,
-      `"${n.title.replace(/"/g, '""')}"`,
-      `"${n.categoryName}"`,
-      `"${n.sourceName}"`,
-      `"${n.locationName}"`,
-      `"${n.publishedAt}"`,
-      `"${n.url}"`,
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set("search", searchQuery.trim());
+    if (selectedCategory !== "ALL") params.set("categoryId", selectedCategory);
+    if (selectedSource !== "ALL") params.set("sourceId", selectedSource);
     const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.href = `/api/news/export?${params.toString()}`;
     link.setAttribute("download", `povertywatch_export_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
-    setExportedSuccess(true);
-    setTimeout(() => setExportedSuccess(false), 3000);
   };
 
   return (
@@ -139,17 +181,8 @@ export default function NewsExplorerPage() {
           onClick={handleExportCSV}
           className="gap-2"
         >
-          {exportedSuccess ? (
-            <>
-              <Check className="h-4 w-4 text-emerald-600" />
-              Terekspor ({filteredNews.length})
-            </>
-          ) : (
-            <>
-              <Download className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-              Ekspor CSV ({filteredNews.length})
-            </>
-          )}
+          <Download className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+          Ekspor CSV ({totalCount})
         </Button>
       </PageHeader>
 
@@ -166,7 +199,7 @@ export default function NewsExplorerPage() {
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Cari kata kunci, topik, atau kecamatan (misal: 'stunting belawan')..."
+                placeholder="Cari kata kunci, judul, atau nama kecamatan (misal: 'stunting belawan')..."
                 className="pl-9 text-xs"
               />
             </div>
@@ -228,8 +261,8 @@ export default function NewsExplorerPage() {
                 }}
                 className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
               >
-                <option value="ALL">Semua Kategori ({MOCK_NEWS.length})</option>
-                {MOCK_CATEGORIES.map((cat) => (
+                <option value="ALL">Semua Kategori</option>
+                {categories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
                   </option>
@@ -251,7 +284,7 @@ export default function NewsExplorerPage() {
                 className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
               >
                 <option value="ALL">Semua Sumber Media</option>
-                {MOCK_SOURCES.map((src) => (
+                {sources.map((src) => (
                   <option key={src.id} value={src.id}>
                     {src.name} ({src.type})
                   </option>
@@ -273,11 +306,14 @@ export default function NewsExplorerPage() {
                 className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
               >
                 <option value="ALL">Seluruh Kota Medan</option>
-                {locations.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
-                ))}
+                <option value="Medan Belawan">Medan Belawan</option>
+                <option value="Medan Deli">Medan Deli</option>
+                <option value="Medan Sunggal">Medan Sunggal</option>
+                <option value="Medan Amplas">Medan Amplas</option>
+                <option value="Medan Labuhan">Medan Labuhan</option>
+                <option value="Medan Timur">Medan Timur</option>
+                <option value="Medan Barat">Medan Barat</option>
+                <option value="Medan Kota">Medan Kota</option>
               </select>
             </div>
 
@@ -289,13 +325,12 @@ export default function NewsExplorerPage() {
               <select
                 value={sortBy}
                 onChange={(e) =>
-                  setSortBy(e.target.value as "newest" | "oldest" | "relevance")
+                  setSortBy(e.target.value as "newest" | "oldest")
                 }
                 className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
               >
                 <option value="newest">Terbaru (Default)</option>
                 <option value="oldest">Terlama</option>
-                <option value="relevance">Skor Relevansi Kata Kunci</option>
               </select>
             </div>
           </div>
@@ -305,19 +340,31 @@ export default function NewsExplorerPage() {
       {/* Results Count & Meta */}
       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
         <span>
-          Menampilkan <strong>{filteredNews.length}</strong> artikel terverifikasi
+          Menampilkan <strong>{totalCount}</strong> artikel terverifikasi dari database
         </span>
         <span>
           Halaman {currentPage} dari {totalPages}
         </span>
       </div>
 
-      {/* Main Content: Table or Grid */}
-      {filteredNews.length === 0 ? (
+      {/* Content Rendering: Loading, Error, Empty, or Data */}
+      {loading ? (
+        <Card className="p-4 bg-white dark:bg-slate-900 rounded-xl">
+          <TableRowSkeleton columns={6} />
+          <TableRowSkeleton columns={6} />
+          <TableRowSkeleton columns={6} />
+        </Card>
+      ) : error ? (
+        <ErrorState
+          title="Gagal Memuat Berita"
+          description={error}
+          onRetry={handleRetry}
+        />
+      ) : news.length === 0 ? (
         <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
           <EmptyState
             title="Tidak Ada Artikel Ditemukan"
-            description="Tidak ada berita yang cocok dengan kriteria kata kunci atau kombinasi filter saat ini. Coba longgarkan filter."
+            description="Tidak ada artikel berita yang cocok dengan kriteria pencarian atau filter saat ini. Coba ubah kata kunci atau jalankan ingestion scraper."
             action={
               <Button
                 variant="outline"
@@ -347,43 +394,55 @@ export default function NewsExplorerPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {paginatedNews.map((news) => (
+                {news.map((item) => (
                   <tr
-                    key={news.id}
+                    key={item.id}
                     className="hover:bg-slate-50/70 transition dark:hover:bg-slate-800/50"
                   >
                     <td className="py-3 px-4 max-w-md">
                       <Link
-                        href={`/news/${news.id}`}
+                        href={`/news/${item.id}`}
                         className="font-medium text-slate-900 hover:text-teal-700 transition dark:text-white dark:hover:text-teal-400 line-clamp-2"
                       >
-                        {news.title}
+                        {item.title}
                       </Link>
-                      <p className="mt-0.5 text-[11px] text-slate-500 line-clamp-1 dark:text-slate-400">
-                        {news.description}
-                      </p>
+                      {item.description && (
+                        <p className="mt-0.5 text-[11px] text-slate-500 line-clamp-1 dark:text-slate-400">
+                          {item.description}
+                        </p>
+                      )}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <CategoryBadge
-                        name={news.categoryName}
-                        slug={news.categorySlug}
-                      />
+                      {item.category ? (
+                        <CategoryBadge
+                          name={item.category.name}
+                          slug={item.category.slug}
+                        />
+                      ) : (
+                        <span className="text-slate-400 text-[11px]">Umum</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
                         <MapPin className="h-3 w-3 text-slate-400" />
-                        {news.locationName}
+                        {item.locationName || "Kota Medan"}
                       </span>
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
-                      {news.sourceName}
+                      {item.source?.name || "-"}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
-                      {news.publishedAt.split(" ")[0]}
+                      {item.publishedAt
+                        ? new Date(item.publishedAt).toLocaleDateString("id-ID", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "-"}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-1.5">
-                        <Link href={`/news/${news.id}`}>
+                        <Link href={`/news/${item.id}`}>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -393,7 +452,7 @@ export default function NewsExplorerPage() {
                           </Button>
                         </Link>
                         <a
-                          href={news.url}
+                          href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
@@ -412,39 +471,47 @@ export default function NewsExplorerPage() {
       ) : (
         /* Grid / Card View */
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {paginatedNews.map((news) => (
+          {news.map((item) => (
             <Card
-              key={news.id}
+              key={item.id}
               className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:shadow-sm dark:border-slate-800 dark:bg-slate-900"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 pb-2">
-                  <CategoryBadge
-                    name={news.categoryName}
-                    slug={news.categorySlug}
-                  />
+                  {item.category ? (
+                    <CategoryBadge
+                      name={item.category.name}
+                      slug={item.category.slug}
+                    />
+                  ) : (
+                    <span className="text-[11px] text-slate-400">Umum</span>
+                  )}
                   <span className="text-[11px] text-slate-400">
-                    {news.publishedAt}
+                    {item.publishedAt
+                      ? new Date(item.publishedAt).toLocaleDateString("id-ID")
+                      : ""}
                   </span>
                 </div>
                 <Link
-                  href={`/news/${news.id}`}
+                  href={`/news/${item.id}`}
                   className="font-semibold text-slate-900 hover:text-teal-700 transition dark:text-white dark:hover:text-teal-400 text-sm block mt-1"
                 >
-                  {news.title}
+                  {item.title}
                 </Link>
-                <p className="mt-2 text-xs text-slate-600 line-clamp-3 dark:text-slate-300">
-                  {news.description}
-                </p>
+                {item.description && (
+                  <p className="mt-2 text-xs text-slate-600 line-clamp-3 dark:text-slate-300">
+                    {item.description}
+                  </p>
+                )}
               </div>
 
               <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800">
                 <span className="flex items-center gap-1">
                   <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                  {news.locationName} &bull; {news.sourceName}
+                  {item.locationName || "Kota Medan"} &bull; {item.source?.name}
                 </span>
                 <Link
-                  href={`/news/${news.id}`}
+                  href={`/news/${item.id}`}
                   className="font-medium text-teal-700 hover:underline dark:text-teal-400"
                 >
                   Lihat Detail &rarr;

@@ -149,3 +149,4 @@ model ScrapingLog {
   @@index([jobId])
   @@index([level])
 }
+

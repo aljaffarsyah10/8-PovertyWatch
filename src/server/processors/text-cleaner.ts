@@ -18,3 +18,4 @@ export function cleanText(rawText?: string | null): string {
     .replace(/\s+/g, " ")
     .trim();
 }
+

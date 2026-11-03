@@ -124,3 +124,4 @@ export class HtmlScraper implements INewsScraper {
     return { items, errors };
   }
 }
+

@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { TableRowSkeleton } from "@/components/shared/loading-skeleton";
+import { ErrorState } from "@/components/shared/error-state";
+import { EmptyState } from "@/components/shared/empty-state";
 import {
   Plus,
   Play,
@@ -14,15 +17,30 @@ import {
   X,
   Search,
   Check,
+  RefreshCw,
 } from "lucide-react";
-import { MOCK_SOURCES, MockSource } from "@/features/sources/mocks/mock-sources";
+import { apiFetch } from "@/lib/api-client";
+
+interface SourceItem {
+  id: string;
+  name: string;
+  baseUrl: string;
+  feedUrl?: string | null;
+  type: "RSS" | "HTML";
+  isActive: boolean;
+  scrapeFrequency: "DAILY" | "WEEKLY" | "MONTHLY";
+  lastScrapedAt?: string | null;
+  _count?: { news: number };
+}
 
 export default function SourcesPage() {
-  const [sources, setSources] = useState<MockSource[]>(MOCK_SOURCES);
+  const [sources, setSources] = useState<SourceItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "RSS" | "HTML">("ALL");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -37,10 +55,52 @@ export default function SourcesPage() {
   });
 
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3000);
+  };
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadSources() {
+      try {
+        const res = await apiFetch<SourceItem[]>("/api/sources");
+        if (!ignore && res.data) {
+          setSources(res.data);
+        }
+      } catch (err: unknown) {
+        if (!ignore) {
+          setError(
+            err instanceof Error ? err.message : "Gagal memuat sumber berita"
+          );
+        }
+      } finally {
+        if (!ignore) {
+          setLoading(false);
+        }
+      }
+    }
+    loadSources();
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await apiFetch<SourceItem[]>("/api/sources");
+      if (res.data) setSources(res.data);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Gagal memuat sumber berita"
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredSources = sources.filter((s) => {
@@ -51,30 +111,46 @@ export default function SourcesPage() {
     return matchQuery && matchType;
   });
 
-  const handleToggleActive = (id: string) => {
-    setSources((prev) =>
-      prev.map((s) => {
-        if (s.id === id) {
-          const updated = !s.isActive;
-          showNotification(
-            `Sumber "${s.name}" ${updated ? "diaktifkan" : "dinonaktifkan"}.`
-          );
-          return { ...s, isActive: updated };
-        }
-        return s;
-      })
-    );
-  };
-
-  const handleDeleteSource = (id: string, name: string) => {
-    if (confirm(`Apakah Anda yakin ingin menghapus sumber "${name}"?`)) {
-      setSources((prev) => prev.filter((s) => s.id !== id));
-      showNotification(`Sumber "${name}" berhasil dihapus.`);
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      await apiFetch(`/api/sources/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ isActive: !currentStatus }),
+      });
+      setSources((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, isActive: !currentStatus } : s))
+      );
+      showNotification(
+        `Status sumber diperbarui: ${!currentStatus ? "Aktif" : "Nonaktif"}.`
+      );
+    } catch (err: unknown) {
+      alert(`Gagal memperbarui status: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
-  const handleTestScrape = (name: string) => {
-    showNotification(`Test scrape pada "${name}" berhasil: 12 artikel ditemukan.`);
+  const handleDeleteSource = async (id: string, name: string) => {
+    if (!confirm(`Hapus sumber "${name}" beserta konfigurasi scraping-nya?`)) {
+      return;
+    }
+    try {
+      await apiFetch(`/api/sources/${id}`, { method: "DELETE" });
+      setSources((prev) => prev.filter((s) => s.id !== id));
+      showNotification(`Sumber "${name}" berhasil dihapus.`);
+    } catch (err: unknown) {
+      alert(`Gagal menghapus sumber: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  const handleTriggerScrape = async (sourceId: string, name: string) => {
+    try {
+      await apiFetch("/api/scraping/run", {
+        method: "POST",
+        body: JSON.stringify({ sourceId }),
+      });
+      showNotification(`Scraping untuk "${name}" telah dicatat ke antrean worker.`);
+    } catch (err: unknown) {
+      alert(`Gagal memicu scraping: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   const validateForm = () => {
@@ -91,57 +167,58 @@ export default function SourcesPage() {
     ) {
       errors.feedUrl = "Feed URL wajib diisi untuk sumber bertipe RSS.";
     }
-    if (formData.type === "HTML") {
-      if (!formData.itemSelector.trim()) {
-        errors.itemSelector = "Item container selector wajib diisi.";
-      }
-      if (!formData.titleSelector.trim()) {
-        errors.titleSelector = "Title selector wajib diisi.";
-      }
-    }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
 
-  const handleAddSourceSubmit = (e: React.FormEvent) => {
+  const handleAddSourceSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) return;
 
-    const newSource: MockSource = {
-      id: `src-${Date.now()}`,
-      name: formData.name,
-      baseUrl: formData.baseUrl,
-      feedUrl: formData.type === "RSS" ? formData.feedUrl : undefined,
-      type: formData.type,
-      isActive: true,
-      scrapeFrequency: formData.scrapeFrequency,
-      lastScrapedAt: "Belum pernah",
-      totalArticles: 0,
-      status: "NORMAL",
-      selectorConfig:
-        formData.type === "HTML"
-          ? {
-              itemSelector: formData.itemSelector,
-              titleSelector: formData.titleSelector,
-              linkSelector: formData.linkSelector || formData.titleSelector,
-            }
-          : undefined,
-    };
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: formData.name,
+        baseUrl: formData.baseUrl,
+        feedUrl: formData.type === "RSS" ? formData.feedUrl : null,
+        type: formData.type,
+        scrapeFrequency: formData.scrapeFrequency,
+        isActive: true,
+        selectorConfig:
+          formData.type === "HTML"
+            ? {
+                itemSelector: formData.itemSelector,
+                titleSelector: formData.titleSelector,
+                linkSelector: formData.linkSelector || formData.titleSelector,
+              }
+            : null,
+      };
 
-    setSources([newSource, ...sources]);
-    setIsAddModalOpen(false);
-    setFormData({
-      name: "",
-      baseUrl: "",
-      feedUrl: "",
-      type: "RSS",
-      scrapeFrequency: "DAILY",
-      itemSelector: "",
-      titleSelector: "",
-      linkSelector: "",
-    });
-    setFormErrors({});
-    showNotification(`Sumber "${newSource.name}" berhasil ditambahkan.`);
+      const res = await apiFetch<SourceItem>("/api/sources", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      if (res.data) {
+        setSources([res.data, ...sources]);
+      }
+      setIsAddModalOpen(false);
+      setFormData({
+        name: "",
+        baseUrl: "",
+        feedUrl: "",
+        type: "RSS",
+        scrapeFrequency: "DAILY",
+        itemSelector: "",
+        titleSelector: "",
+        linkSelector: "",
+      });
+      showNotification(`Sumber "${payload.name}" berhasil ditambahkan.`);
+    } catch (err: unknown) {
+      alert(`Gagal menambahkan sumber: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -159,6 +236,15 @@ export default function SourcesPage() {
         title="Manajemen Sumber Berita"
         description="Kelola portal berita lokal Kota Medan dan konfigurasi scraping RSS / HTML."
       >
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleRefresh}
+          className="gap-1.5 text-xs"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </Button>
         <Button
           size="sm"
           onClick={() => setIsAddModalOpen(true)}
@@ -211,111 +297,147 @@ export default function SourcesPage() {
       </Card>
 
       {/* Sources Data Table */}
-      <Card className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
-              <tr>
-                <th className="py-3 px-4">Nama Sumber</th>
-                <th className="py-3 px-4">Tipe Ingestion</th>
-                <th className="py-3 px-4">Frekuensi</th>
-                <th className="py-3 px-4">Terakhir Diambil</th>
-                <th className="py-3 px-4">Total Artikel</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {filteredSources.map((source) => (
-                <tr
-                  key={source.id}
-                  className="hover:bg-slate-50/70 transition dark:hover:bg-slate-800/50"
-                >
-                  <td className="py-3 px-4 max-w-xs">
-                    <div className="font-semibold text-slate-900 dark:text-white">
-                      {source.name}
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
-                      <a
-                        href={source.baseUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="hover:underline flex items-center gap-1 text-slate-500"
-                      >
-                        {source.baseUrl}
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] font-semibold px-2 py-0.5 ${
-                        source.type === "RSS"
-                          ? "border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-900 dark:bg-teal-950/60 dark:text-teal-300"
-                          : "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/60 dark:text-purple-300"
-                      }`}
-                    >
-                      {source.type}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
-                    {source.scrapeFrequency === "DAILY" ? "1x Sehari (Harian)" : source.scrapeFrequency}
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
-                    {source.lastScrapedAt}
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-900 dark:text-white">
-                    {source.totalArticles}
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap">
-                    <button
-                      onClick={() => handleToggleActive(source.id)}
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer transition ${
-                        source.isActive
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
-                          : "bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
-                      }`}
-                    >
-                      <span
-                        className={`h-1.5 w-1.5 rounded-full ${
-                          source.isActive ? "bg-emerald-500" : "bg-slate-400"
-                        }`}
-                      />
-                      {source.isActive ? "Aktif" : "Nonaktif"}
-                    </button>
-                  </td>
-                  <td className="py-3 px-4 whitespace-nowrap text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTestScrape(source.name)}
-                        className="h-7 px-2 text-xs text-teal-700 hover:bg-teal-50 dark:text-teal-300"
-                        title="Uji coba scraper"
-                      >
-                        <Play className="h-3 w-3 mr-1" />
-                        Test
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          handleDeleteSource(source.id, source.name)
-                        }
-                        className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600"
-                        title="Hapus sumber"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </td>
+      {loading ? (
+        <Card className="p-4 bg-white dark:bg-slate-900 rounded-xl">
+          <TableRowSkeleton columns={6} />
+          <TableRowSkeleton columns={6} />
+        </Card>
+      ) : error ? (
+        <ErrorState
+          title="Gagal Memuat Sumber"
+          description={error}
+          onRetry={handleRefresh}
+        />
+      ) : filteredSources.length === 0 ? (
+        <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <EmptyState
+            title="Belum Ada Sumber Berita"
+            description="Tambahkan portal media berita lokal pertama Anda untuk mulai mengumpulkan berita."
+            action={
+              <Button
+                size="sm"
+                onClick={() => setIsAddModalOpen(true)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Sumber Sekarang
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <Card className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+                <tr>
+                  <th className="py-3 px-4">Nama Sumber</th>
+                  <th className="py-3 px-4">Tipe Ingestion</th>
+                  <th className="py-3 px-4">Frekuensi</th>
+                  <th className="py-3 px-4">Terakhir Diambil</th>
+                  <th className="py-3 px-4">Total Artikel</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filteredSources.map((source) => (
+                  <tr
+                    key={source.id}
+                    className="hover:bg-slate-50/70 transition dark:hover:bg-slate-800/50"
+                  >
+                    <td className="py-3 px-4 max-w-xs">
+                      <div className="font-semibold text-slate-900 dark:text-white">
+                        {source.name}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
+                        <a
+                          href={source.baseUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="hover:underline flex items-center gap-1 text-slate-500"
+                        >
+                          {source.baseUrl}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-semibold px-2 py-0.5 ${
+                          source.type === "RSS"
+                            ? "border-teal-200 bg-teal-50 text-teal-800 dark:border-teal-900 dark:bg-teal-950/60 dark:text-teal-300"
+                            : "border-purple-200 bg-purple-50 text-purple-800 dark:border-purple-900 dark:bg-purple-950/60 dark:text-purple-300"
+                        }`}
+                      >
+                        {source.type}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
+                      {source.scrapeFrequency === "DAILY" ? "1x Sehari (Harian)" : source.scrapeFrequency}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                      {source.lastScrapedAt
+                        ? new Date(source.lastScrapedAt).toLocaleString("id-ID")
+                        : "Belum pernah"}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-900 dark:text-white">
+                      {source._count?.news ?? 0}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      <button
+                        onClick={() =>
+                          handleToggleActive(source.id, source.isActive)
+                        }
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium cursor-pointer transition ${
+                          source.isActive
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                            : "bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700"
+                        }`}
+                      >
+                        <span
+                          className={`h-1.5 w-1.5 rounded-full ${
+                            source.isActive ? "bg-emerald-500" : "bg-slate-400"
+                          }`}
+                        />
+                        {source.isActive ? "Aktif" : "Nonaktif"}
+                      </button>
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            handleTriggerScrape(source.id, source.name)
+                          }
+                          className="h-7 px-2 text-xs text-teal-700 hover:bg-teal-50 dark:text-teal-300"
+                          title="Picu scraping sumber ini"
+                        >
+                          <Play className="h-3 w-3 mr-1" />
+                          Scrape
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            handleDeleteSource(source.id, source.name)
+                          }
+                          className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600"
+                          title="Hapus sumber"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      )}
 
       {/* Add Source Modal Dialog */}
       {isAddModalOpen && (
@@ -414,7 +536,7 @@ export default function SourcesPage() {
                 </div>
               </div>
 
-              {formData.type === "RSS" ? (
+              {formData.type === "RSS" && (
                 <div>
                   <label className="text-xs font-medium text-slate-700 block mb-1 dark:text-slate-300">
                     Feed URL (XML/RSS) *
@@ -433,44 +555,6 @@ export default function SourcesPage() {
                     </p>
                   )}
                 </div>
-              ) : (
-                <div className="space-y-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/60">
-                  <span className="text-[11px] font-semibold text-slate-700 block dark:text-slate-300">
-                    Konfigurasi CSS Selector HTML:
-                  </span>
-                  <div>
-                    <label className="text-[10px] text-slate-500 block mb-0.5">
-                      Item Container Selector *
-                    </label>
-                    <Input
-                      value={formData.itemSelector}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          itemSelector: e.target.value,
-                        })
-                      }
-                      placeholder=".post-item, article"
-                      className="text-xs bg-white dark:bg-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-500 block mb-0.5">
-                      Title & Link Selector *
-                    </label>
-                    <Input
-                      value={formData.titleSelector}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          titleSelector: e.target.value,
-                        })
-                      }
-                      placeholder="h2.entry-title a"
-                      className="text-xs bg-white dark:bg-slate-900"
-                    />
-                  </div>
-                </div>
               )}
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -485,9 +569,10 @@ export default function SourcesPage() {
                 <Button
                   type="submit"
                   size="sm"
+                  disabled={isSubmitting}
                   className="bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900"
                 >
-                  Simpan Sumber
+                  {isSubmitting ? "Menyimpan..." : "Simpan Sumber"}
                 </Button>
               </div>
             </form>

@@ -58,3 +58,4 @@ export function normalizeNewsUrl(rawUrl: string): string {
     return rawUrl.trim();
   }
 }
+

@@ -15,3 +15,4 @@ export const NewsQuerySchema = z.object({
 export const TriggerScrapingSchema = z.object({
   sourceId: z.string().uuid("Format sourceId harus UUID").optional(),
 });
+

@@ -50,3 +50,4 @@ main().catch((err) => {
   logger.fatal({ err }, "Fatal error pada background worker");
   process.exit(1);
 });
+
