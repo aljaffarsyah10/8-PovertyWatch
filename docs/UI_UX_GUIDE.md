@@ -369,3 +369,4 @@ Panduan UI/UX ini mengikat seluruh pengembangan visual pada:
 - **Phase 4:** Pembangunan Application Shell, Sidebar, Header, dan Global Layout.
 - **Phase 5:** Pembangunan Halaman Inti (Dashboard, News Explorer, Detail, Sources, Monitor).
 - **Phase 8:** Polishing estetika, empty states, dan responsivitas mobile.
+
