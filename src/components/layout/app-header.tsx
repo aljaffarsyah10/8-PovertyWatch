@@ -57,3 +57,4 @@ export function AppHeader({ onOpenMobileMenu }: AppHeaderProps) {
     </header>
   );
 }
+

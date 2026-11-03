@@ -50,3 +50,4 @@ export function CategoryBadge({ name, slug, className }: CategoryBadgeProps) {
     </Badge>
   );
 }
+

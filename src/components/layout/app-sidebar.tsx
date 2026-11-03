@@ -196,3 +196,4 @@ export function AppSidebar({ onClose, className }: AppSidebarProps) {
     </aside>
   );
 }
+
