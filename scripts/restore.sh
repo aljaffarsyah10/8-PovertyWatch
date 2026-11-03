@@ -34,3 +34,4 @@ echo "▶️ Menjalankan kembali aplikasi & worker..."
 docker compose start app worker
 
 echo "✅ Pemulihan basis data selesai dan terverifikasi."
+

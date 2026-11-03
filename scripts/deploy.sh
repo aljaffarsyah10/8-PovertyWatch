@@ -36,3 +36,4 @@ echo "========================================================"
 echo "🎉 DEPLOYMENT SELESAI DENGAN SUKSES!"
 echo "Situs aktif di: https://povertywatch.id"
 echo "========================================================"
+

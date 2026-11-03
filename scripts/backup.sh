@@ -29,3 +29,4 @@ fi
 echo "🧹 Membersihkan cadangan kadaluarsa (> 30 hari)..."
 find "${BACKUP_DIR}" -type f -name "povertywatch_db_*.sql.gz" -mtime +30 -delete
 echo "✨ Pemeliharaan backup selesai."
+

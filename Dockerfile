@@ -59,3 +59,4 @@ EXPOSE 3000
 
 # Default command starts the Next.js server
 CMD ["npm", "start"]
+
