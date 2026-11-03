@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { logger } from "@/lib/logger";
 import * as XLSX from "xlsx";
+import { sanitizeFormulaInjection } from "@/server/security/sanitize-export";
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,19 +48,19 @@ export async function GET(request: NextRequest) {
     // 1. Data Sheet
     const dataRows = newsList.map((item, idx) => ({
       No: idx + 1,
-      ID: item.id,
-      "Judul Berita": item.title,
-      "Sumber Media": item.source?.name || "N/A",
-      "Kategori Fenomena": item.category?.name || "Belum Terkategori",
-      "Wilayah / Lokasi": item.locationName || "Kota Medan",
-      "Level Wilayah": item.locationLevel || "KOTA",
-      "Ringkasan AI": item.aiSummary || item.description || "-",
+      ID: sanitizeFormulaInjection(item.id),
+      "Judul Berita": sanitizeFormulaInjection(item.title),
+      "Sumber Media": sanitizeFormulaInjection(item.source?.name || "N/A"),
+      "Kategori Fenomena": sanitizeFormulaInjection(item.category?.name || "Belum Terkategori"),
+      "Wilayah / Lokasi": sanitizeFormulaInjection(item.locationName || "Kota Medan"),
+      "Level Wilayah": sanitizeFormulaInjection(item.locationLevel || "KOTA"),
+      "Ringkasan AI": sanitizeFormulaInjection(item.aiSummary || item.description || "-"),
       "Keyakinan AI (Confidence)": item.aiConfidence ? `${(item.aiConfidence * 100).toFixed(0)}%` : "-",
-      "Alasan Klasifikasi": item.aiReason || "-",
+      "Alasan Klasifikasi": sanitizeFormulaInjection(item.aiReason || "-"),
       "Tanggal Publikasi": item.publishedAt
         ? new Date(item.publishedAt).toLocaleString("id-ID")
         : "-",
-      "Tautan Berita Asli": item.url,
+      "Tautan Berita Asli": sanitizeFormulaInjection(item.url),
     }));
 
     // 2. Disclaimer Sheet

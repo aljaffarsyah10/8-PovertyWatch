@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db/prisma";
 import { NewsQuerySchema } from "@/lib/validation/news.schema";
 import { Prisma } from "@prisma/client";
+import { sanitizeFormulaInjection } from "@/server/security/sanitize-export";
 
 export async function GET(req: NextRequest) {
   try {
@@ -42,13 +43,13 @@ export async function GET(req: NextRequest) {
     ];
 
     const csvRows = items.map((n) => [
-      `"${n.id}"`,
-      `"${n.title.replace(/"/g, '""')}"`,
-      `"${n.category?.name || "Tidak Terkategori"}"`,
-      `"${n.source?.name || ""}"`,
-      `"${n.locationName || ""}"`,
+      `"${sanitizeFormulaInjection(n.id)}"`,
+      `"${sanitizeFormulaInjection(n.title).replace(/"/g, '""')}"`,
+      `"${sanitizeFormulaInjection(n.category?.name || "Tidak Terkategori")}"`,
+      `"${sanitizeFormulaInjection(n.source?.name || "")}"`,
+      `"${sanitizeFormulaInjection(n.locationName || "")}"`,
       `"${n.publishedAt ? n.publishedAt.toISOString() : ""}"`,
-      `"${n.url}"`,
+      `"${sanitizeFormulaInjection(n.url)}"`,
     ]);
 
     const csvData = [headers.join(","), ...csvRows.map((r) => r.join(","))].join("\n");
