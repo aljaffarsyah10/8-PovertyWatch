@@ -1,0 +1,151 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum SourceType {
+  RSS
+  HTML
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum TriggerType {
+  MANUAL
+  SCHEDULED
+}
+
+enum LogLevel {
+  INFO
+  WARNING
+  ERROR
+}
+
+model NewsSource {
+  id              String         @id @default(uuid())
+  name            String         @db.VarChar(150)
+  baseUrl         String         @db.VarChar(500)
+  feedUrl         String?        @db.VarChar(500)
+  type            SourceType     @default(RSS)
+  isActive        Boolean        @default(true)
+  scrapeFrequency Frequency      @default(DAILY)
+  selectorConfig  Json?          // Selector konfigurasi HTML scraper: { itemSelector, titleSelector, linkSelector, dateSelector }
+  lastScrapedAt   DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  news            News[]
+  scrapingJobs    ScrapingJob[]
+  scrapingLogs    ScrapingLog[]
+
+  @@index([isActive])
+}
+
+model Category {
+  id          String        @id @default(uuid())
+  name        String        @db.VarChar(100)
+  slug        String        @unique @db.VarChar(100)
+  description String?       @db.VarChar(500)
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  news        News[]
+  keywords    NewsKeyword[]
+
+  @@index([slug])
+}
+
+model NewsKeyword {
+  id         String   @id @default(uuid())
+  categoryId String
+  keyword    String   @db.VarChar(100)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+  @@index([keyword])
+}
+
+model News {
+  id            String    @id @default(uuid())
+  sourceId      String
+  categoryId    String?
+  title         String    @db.VarChar(500)
+  url           String    @db.Text
+  normalizedUrl String    @unique @db.Text  // Hash / Canonical URL untuk mencegah duplikasi
+  description   String?   @db.Text
+  content       String?   @db.Text
+  author        String?   @db.VarChar(150)
+  imageUrl      String?   @db.Text
+  publishedAt   DateTime?
+  locationName  String?   @db.VarChar(150)  // Contoh: "Medan Sunggal", "Medan Belawan"
+  locationLevel String?   @db.VarChar(50)   // Contoh: "KECAMATAN", "KOTA"
+  aiSummary     String?   @db.Text
+  isRelevant    Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  source        NewsSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  category      Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([publishedAt(sort: Desc)])
+  @@index([categoryId])
+  @@index([sourceId])
+  @@index([isRelevant])
+}
+
+model ScrapingJob {
+  id             String      @id @default(uuid())
+  sourceId       String?     // Null jika batch job mencakup seluruh sumber aktif
+  status         JobStatus   @default(PENDING)
+  triggerType    TriggerType @default(SCHEDULED)
+  startedAt      DateTime?
+  finishedAt     DateTime?
+  totalFound     Int         @default(0)
+  totalNew       Int         @default(0)
+  totalDuplicate Int         @default(0)
+  totalFailed    Int         @default(0)
+  errorMessage   String?     @db.Text
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  source         NewsSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  logs           ScrapingLog[]
+
+  @@index([status, createdAt])
+}
+
+model ScrapingLog {
+  id        String      @id @default(uuid())
+  jobId     String
+  sourceId  String?
+  level     LogLevel    @default(INFO)
+  message   String      @db.Text
+  details   Json?
+  createdAt DateTime    @default(now())
+
+  job       ScrapingJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  source    NewsSource? @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@index([jobId])
+  @@index([level])
+}

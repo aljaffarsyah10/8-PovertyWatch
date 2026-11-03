@@ -129,3 +129,4 @@ export const MOCK_SCRAPING_LOGS: MockScrapingLog[] = [
     details: '{"code": "ETIMEDOUT", "url": "https://analisadaily.com", "attempt": 3}',
   },
 ];
+

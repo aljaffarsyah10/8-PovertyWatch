@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Broken Feed</title>
+    <item>
+      <!-- Title missing / broken tags -->
+      <link>invalid-link-no-protocol</link>
+    </item>
+    <item>
+      <title>Ab</title> <!-- too short -->
+      <link></link>
+    </item>
+  </channel>
+</rss>

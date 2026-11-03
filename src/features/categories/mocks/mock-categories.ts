@@ -78,3 +78,4 @@ export const MOCK_CATEGORIES: MockCategory[] = [
     keywords: ["banjir rob", "sungai deli meluap", "pengungsi banjir", "kampung nelayan terendam"],
   },
 ];
+
