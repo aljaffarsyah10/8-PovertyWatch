@@ -690,3 +690,4 @@ Rencana arsitektur teknis ini telah diverifikasi terhadap seluruh batasan PRD. A
 - **Phase 3:** Desain UI/UX & Design System.
 - **Phase 4–5:** Implementasi Antarmuka Frontend.
 - **Phase 6–7:** Implementasi Database Schema, API Route Handlers, dan Scraper Pipeline.
+
