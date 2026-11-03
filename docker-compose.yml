@@ -1,0 +1,119 @@
+version: "3.9"
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. PostgreSQL Database Service
+  # ----------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: povertywatch_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-povertywatch}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-povertywatch_secure_pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-povertywatch}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - povertywatch_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-povertywatch} -d ${POSTGRES_DB:-povertywatch}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # ----------------------------------------------------------------------------
+  # 2. Next.js Web & API Application Service
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: povertywatch_app
+    restart: unless-stopped
+    command: ["npm", "start"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-povertywatch}:${POSTGRES_PASSWORD:-povertywatch_secure_pwd}@db:5432/${POSTGRES_DB:-povertywatch}
+      ADMIN_SESSION_SECRET: ${ADMIN_SESSION_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      SCRAPER_USER_AGENT: ${SCRAPER_USER_AGENT:-PovertyWatch-Bot/1.0 (+https://povertywatch.id)}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://povertywatch.id}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - povertywatch_internal
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+
+  # ----------------------------------------------------------------------------
+  # 3. Background Ingestion Worker Service
+  # ----------------------------------------------------------------------------
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: povertywatch_worker
+    restart: unless-stopped
+    command: ["npm", "run", "worker"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-povertywatch}:${POSTGRES_PASSWORD:-povertywatch_secure_pwd}@db:5432/${POSTGRES_DB:-povertywatch}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-}
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      SCRAPER_USER_AGENT: ${SCRAPER_USER_AGENT:-PovertyWatch-Bot/1.0 (+https://povertywatch.id)}
+      SCRAPER_CRON_SCHEDULE: ${SCRAPER_CRON_SCHEDULE:-0 6 * * *}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - povertywatch_internal
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # ----------------------------------------------------------------------------
+  # 4. Nginx Reverse Proxy with TLS & Security Headers
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:alpine
+    container_name: povertywatch_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      - app
+    networks:
+      - povertywatch_internal
+
+networks:
+  povertywatch_internal:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
