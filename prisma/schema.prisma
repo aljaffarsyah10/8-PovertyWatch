@@ -97,10 +97,13 @@ model News {
   author        String?   @db.VarChar(150)
   imageUrl      String?   @db.Text
   publishedAt   DateTime?
-  locationName  String?   @db.VarChar(150)  // Contoh: "Medan Sunggal", "Medan Belawan"
-  locationLevel String?   @db.VarChar(50)   // Contoh: "KECAMATAN", "KOTA"
-  aiSummary     String?   @db.Text
-  isRelevant    Boolean   @default(true)
+  locationName   String?   @db.VarChar(150)  // Contoh: "Medan Sunggal", "Medan Belawan"
+  locationLevel  String?   @db.VarChar(50)   // Contoh: "KECAMATAN", "KOTA"
+  aiSummary      String?   @db.Text
+  aiConfidence   Float?
+  aiReason       String?   @db.Text
+  isAiClassified Boolean   @default(false)
+  isRelevant     Boolean   @default(true)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

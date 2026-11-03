@@ -6,6 +6,7 @@ import { SourceScrapeConfig } from "../scrapers/base.scraper";
 import { normalizeNewsUrl } from "./url-normalizer";
 import { matchNewsKeywords } from "./keyword-matcher";
 import { extractMedanLocation } from "./location-extractor";
+import { getAIProvider } from "../ai";
 
 export interface PipelineExecutionStats {
   totalFound: number;
@@ -51,6 +52,7 @@ export class ScrapingPipeline {
     let categoriesWithKeywords: Array<{
       id: string;
       name: string;
+      slug: string;
       keywords: Array<{ keyword: string }>;
     }> = [];
 
@@ -106,6 +108,42 @@ export class ScrapingPipeline {
           }
         }
 
+        // AI Provider Enhancement (Non-blocking: failure never halts scraper)
+        let aiSummaryText: string | null = null;
+        let aiConfidenceScore: number | null = null;
+        let aiReasonText: string | null = null;
+        let isAiClassifiedFlag = false;
+
+        try {
+          const aiProvider = getAIProvider();
+          const [summaryResult, classResult] = await Promise.all([
+            aiProvider.summarizeNews(item.title, item.description || ""),
+            aiProvider.classifyNews(item.title, item.description || ""),
+          ]);
+
+          aiSummaryText = summaryResult.summary;
+          aiConfidenceScore = classResult.confidence;
+          aiReasonText = classResult.reason;
+          isAiClassifiedFlag = true;
+
+          // Jika keyword rule-based belum menemukan kategori, gunakan klasifikasi AI
+          if (!matchedCategoryId) {
+            const foundCat = categoriesWithKeywords.find(
+              (c) =>
+                c.slug === classResult.categorySlug ||
+                c.name.toLowerCase() === classResult.category.toLowerCase()
+            );
+            if (foundCat) {
+              matchedCategoryId = foundCat.id;
+            }
+          }
+        } catch (aiErr) {
+          logger.debug(
+            { aiErr: aiErr instanceof Error ? aiErr.message : String(aiErr) },
+            "AI enrichment skipped or failed; continuing with standard ingestion"
+          );
+        }
+
         // Simpan ke basis data
         await prisma.news.create({
           data: {
@@ -120,6 +158,10 @@ export class ScrapingPipeline {
             categoryId: matchedCategoryId,
             locationName: locationInfo.locationName,
             locationLevel: locationInfo.locationLevel,
+            aiSummary: aiSummaryText,
+            aiConfidence: aiConfidenceScore,
+            aiReason: aiReasonText,
+            isAiClassified: isAiClassifiedFlag,
             isRelevant: isRelevant,
           },
         });

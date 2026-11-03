@@ -17,11 +17,15 @@ import {
   CheckCircle2,
   ArrowRight,
   TrendingUp,
+  TrendingDown,
+  BarChart3,
   PieChart,
   ExternalLink,
   MapPin,
   ShieldCheck,
   RefreshCw,
+  FileText,
+  FileSpreadsheet,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 
@@ -39,6 +43,17 @@ interface DashboardStats {
   }>;
 }
 
+interface TrendData {
+  totalAllTime: number;
+  currentPeriodCount: number;
+  previousPeriodCount: number;
+  percentageChange: number;
+  weeklyTrends: Array<{ week: string; count: number }>;
+  monthlyTrends: Array<{ month: string; count: number }>;
+  topCategories: Array<{ categoryId: string; name: string; slug: string; count: number; percentage: number }>;
+  regionalBreakdown: Array<{ location: string; count: number }>;
+}
+
 interface NewsItem {
   id: string;
   title: string;
@@ -51,15 +66,17 @@ interface NewsItem {
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [trends, setTrends] = useState<TrendData | null>(null);
   const [latestNews, setLatestNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadDashboardData = async () => {
     try {
-      const [statsRes, newsRes] = await Promise.all([
+      const [statsRes, newsRes, trendsRes] = await Promise.all([
         apiFetch<DashboardStats>("/api/dashboard/stats"),
         apiFetch<NewsItem[]>("/api/news?limit=4&sortBy=newest"),
+        apiFetch<TrendData>("/api/dashboard/trends"),
       ]);
 
       if (statsRes.data) {
@@ -67,6 +84,9 @@ export default function DashboardPage() {
       }
       if (newsRes.data) {
         setLatestNews(newsRes.data);
+      }
+      if (trendsRes.data) {
+        setTrends(trendsRes.data);
       }
     } catch (err: unknown) {
       setError(
@@ -83,13 +103,15 @@ export default function DashboardPage() {
     let ignore = false;
     async function init() {
       try {
-        const [statsRes, newsRes] = await Promise.all([
+        const [statsRes, newsRes, trendsRes] = await Promise.all([
           apiFetch<DashboardStats>("/api/dashboard/stats"),
           apiFetch<NewsItem[]>("/api/news?limit=4&sortBy=newest"),
+          apiFetch<TrendData>("/api/dashboard/trends"),
         ]);
         if (!ignore) {
           if (statsRes.data) setStats(statsRes.data);
           if (newsRes.data) setLatestNews(newsRes.data);
+          if (trendsRes.data) setTrends(trendsRes.data);
         }
       } catch (err: unknown) {
         if (!ignore) {
@@ -167,6 +189,40 @@ export default function DashboardPage() {
         title="Dashboard Pemantauan Media"
         description="Analisis frekuensi pemberitaan kemiskinan dan fenomena sosial ekonomi lokal di Kota Medan."
       >
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const a = document.createElement("a");
+            a.href = "/api/news/export/excel";
+            a.download = `povertywatch_export_${Date.now()}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }}
+          className="gap-1.5 text-xs text-slate-700 dark:text-slate-200"
+          title="Unduh dataset lengkap dalam format Excel"
+        >
+          <FileSpreadsheet className="h-3.5 w-3.5 text-emerald-600" />
+          Excel (XLSX)
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const a = document.createElement("a");
+            a.href = "/api/news/report/pdf";
+            a.download = `povertywatch_report_${Date.now()}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }}
+          className="gap-1.5 text-xs text-slate-700 dark:text-slate-200"
+          title="Unduh laporan ringkasan berkala dalam format PDF"
+        >
+          <FileText className="h-3.5 w-3.5 text-rose-600" />
+          Laporan PDF
+        </Button>
         <Button
           variant="ghost"
           size="sm"
@@ -383,6 +439,111 @@ export default function DashboardPage() {
               ))}
             </div>
           )}
+        </Card>
+      </div>
+
+      {/* Trend Monitoring Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Weekly Trend Bar Chart */}
+        <Card className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900 lg:col-span-2">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-teal-600" />
+                <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                  Dinamika Tren Publikasi Mingguan
+                </h2>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Frekuensi artikel berita kemiskinan dan masalah sosial ekonomi 8 minggu terakhir
+              </p>
+            </div>
+            {trends && (
+              <Badge
+                variant="outline"
+                className={`gap-1 text-xs font-semibold ${
+                  trends.percentageChange >= 0
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                    : "border-rose-200 bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
+                }`}
+              >
+                {trends.percentageChange >= 0 ? (
+                  <TrendingUp className="h-3.5 w-3.5" />
+                ) : (
+                  <TrendingDown className="h-3.5 w-3.5" />
+                )}
+                {trends.percentageChange > 0 ? `+${trends.percentageChange}%` : `${trends.percentageChange}%`}{" "}
+                vs 30 hari lalu
+              </Badge>
+            )}
+          </div>
+
+          <div className="mt-6">
+            {trends?.weeklyTrends && trends.weeklyTrends.length > 0 ? (
+              <div className="grid grid-cols-8 gap-2 items-end h-40 pt-6">
+                {trends.weeklyTrends.map((w, idx) => {
+                  const maxCount = Math.max(...trends.weeklyTrends.map((t) => t.count), 1);
+                  const barHeight = Math.max(Math.round((w.count / maxCount) * 100), 8);
+
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-2 h-full justify-end group">
+                      <span className="text-[10px] font-semibold text-slate-600 opacity-0 group-hover:opacity-100 transition dark:text-slate-300">
+                        {w.count}
+                      </span>
+                      <div
+                        className="w-full max-w-[28px] rounded-t-md bg-teal-600 group-hover:bg-teal-500 transition-all dark:bg-teal-500 dark:group-hover:bg-teal-400"
+                        style={{ height: `${barHeight}%` }}
+                      />
+                      <span className="text-[10px] font-medium text-slate-400 text-center truncate w-full">
+                        {w.week}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 py-10 text-center">
+                Belum cukup riwayat data untuk visualisasi mingguan.
+              </p>
+            )}
+          </div>
+        </Card>
+
+        {/* Regional Breakdown Card */}
+        <Card className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900 lg:col-span-1">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+                Sebaran Wilayah
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Kecamatan paling sering diberitakan
+              </p>
+            </div>
+            <MapPin className="h-4 w-4 text-teal-600" />
+          </div>
+
+          <div className="mt-4 space-y-2.5">
+            {trends?.regionalBreakdown && trends.regionalBreakdown.length > 0 ? (
+              trends.regionalBreakdown.slice(0, 6).map((reg, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100 text-xs dark:bg-slate-800/40 dark:border-slate-800"
+                >
+                  <span className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                    {reg.location}
+                  </span>
+                  <Badge variant="outline" className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    {reg.count} berita
+                  </Badge>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-slate-400 py-6 text-center">
+                Belum ada data ekstraksi wilayah kecamatan.
+              </p>
+            )}
+          </div>
         </Card>
       </div>
 

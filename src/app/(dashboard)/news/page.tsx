@@ -18,6 +18,8 @@ import {
   RotateCcw,
   LayoutGrid,
   List,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 
@@ -168,6 +170,31 @@ export default function NewsExplorerPage() {
     document.body.removeChild(link);
   };
 
+  const handleExportExcel = () => {
+    const params = new URLSearchParams();
+    if (searchQuery.trim()) params.set("search", searchQuery.trim());
+    if (selectedCategory !== "ALL") params.set("categoryId", selectedCategory);
+    if (selectedSource !== "ALL") params.set("sourceId", selectedSource);
+    if (selectedLocation !== "ALL") params.set("location", selectedLocation);
+    const link = document.createElement("a");
+    link.href = `/api/news/export/excel?${params.toString()}`;
+    link.setAttribute("download", `povertywatch_export_${Date.now()}.xlsx`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportPDF = () => {
+    const params = new URLSearchParams();
+    if (selectedCategory !== "ALL") params.set("categoryId", selectedCategory);
+    const link = document.createElement("a");
+    link.href = `/api/news/report/pdf?${params.toString()}`;
+    link.setAttribute("download", `povertywatch_report_${Date.now()}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -175,15 +202,38 @@ export default function NewsExplorerPage() {
         title="News Explorer"
         description="Telusuri, saring, dan analisis artikel berita fenomena sosial ekonomi di Kota Medan."
       >
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExportCSV}
-          className="gap-2"
-        >
-          <Download className="h-4 w-4 text-slate-600 dark:text-slate-400" />
-          Ekspor CSV ({totalCount})
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCSV}
+            className="gap-1.5 text-xs text-slate-700 dark:text-slate-300"
+            title="Ekspor data hasil filter ke CSV"
+          >
+            <Download className="h-3.5 w-3.5" />
+            CSV ({totalCount})
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportExcel}
+            className="gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 dark:text-emerald-400"
+            title="Ekspor ke Excel Workbook (XLSX) dengan lembar metodologi"
+          >
+            <FileSpreadsheet className="h-3.5 w-3.5" />
+            Excel
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportPDF}
+            className="gap-1.5 text-xs text-rose-700 hover:text-rose-800 dark:text-rose-400"
+            title="Unduh laporan ringkasan berita dalam format PDF"
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Laporan PDF
+          </Button>
+        </div>
       </PageHeader>
 
       {/* Filter and Search Panel */}

@@ -18,6 +18,9 @@ import {
   Search,
   Check,
   RefreshCw,
+  HeartPulse,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 
@@ -33,8 +36,18 @@ interface SourceItem {
   _count?: { news: number };
 }
 
+interface SourceHealthItem {
+  sourceId: string;
+  name: string;
+  healthStatus: "HEALTHY" | "DEGRADED" | "FAILING";
+  lastSuccessfulRun?: string | null;
+  lastFailureAt?: string | null;
+  lastErrorMessage?: string | null;
+}
+
 export default function SourcesPage() {
   const [sources, setSources] = useState<SourceItem[]>([]);
+  const [healthMap, setHealthMap] = useState<Record<string, SourceHealthItem>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<"ALL" | "RSS" | "HTML">("ALL");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -66,9 +79,19 @@ export default function SourcesPage() {
     let ignore = false;
     async function loadSources() {
       try {
-        const res = await apiFetch<SourceItem[]>("/api/sources");
-        if (!ignore && res.data) {
-          setSources(res.data);
+        const [res, healthRes] = await Promise.all([
+          apiFetch<SourceItem[]>("/api/sources"),
+          apiFetch<SourceHealthItem[]>("/api/sources/health"),
+        ]);
+        if (!ignore) {
+          if (res.data) setSources(res.data);
+          if (healthRes.data) {
+            const map: Record<string, SourceHealthItem> = {};
+            for (const h of healthRes.data) {
+              map[h.sourceId] = h;
+            }
+            setHealthMap(map);
+          }
         }
       } catch (err: unknown) {
         if (!ignore) {
@@ -92,8 +115,18 @@ export default function SourcesPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiFetch<SourceItem[]>("/api/sources");
+      const [res, healthRes] = await Promise.all([
+        apiFetch<SourceItem[]>("/api/sources"),
+        apiFetch<SourceHealthItem[]>("/api/sources/health"),
+      ]);
       if (res.data) setSources(res.data);
+      if (healthRes.data) {
+        const map: Record<string, SourceHealthItem> = {};
+        for (const h of healthRes.data) {
+          map[h.sourceId] = h;
+        }
+        setHealthMap(map);
+      }
     } catch (err: unknown) {
       setError(
         err instanceof Error ? err.message : "Gagal memuat sumber berita"
@@ -334,6 +367,7 @@ export default function SourcesPage() {
                   <th className="py-3 px-4">Nama Sumber</th>
                   <th className="py-3 px-4">Tipe Ingestion</th>
                   <th className="py-3 px-4">Frekuensi</th>
+                  <th className="py-3 px-4">Kesehatan Sumber</th>
                   <th className="py-3 px-4">Terakhir Diambil</th>
                   <th className="py-3 px-4">Total Artikel</th>
                   <th className="py-3 px-4">Status</th>
@@ -376,6 +410,43 @@ export default function SourcesPage() {
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
                       {source.scrapeFrequency === "DAILY" ? "1x Sehari (Harian)" : source.scrapeFrequency}
+                    </td>
+                    <td className="py-3 px-4 whitespace-nowrap">
+                      {healthMap[source.id] ? (
+                        healthMap[source.id].healthStatus === "HEALTHY" ? (
+                          <Badge
+                            variant="outline"
+                            className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[10px] gap-1 dark:bg-emerald-950 dark:text-emerald-300"
+                          >
+                            <CheckCircle2 className="h-3 w-3" />
+                            Sehat
+                          </Badge>
+                        ) : healthMap[source.id].healthStatus === "DEGRADED" ? (
+                          <Badge
+                            variant="outline"
+                            className="border-amber-200 bg-amber-50 text-amber-700 text-[10px] gap-1 dark:bg-amber-950 dark:text-amber-300"
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                            Degradasi
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="border-rose-200 bg-rose-50 text-rose-700 text-[10px] gap-1 dark:bg-rose-950 dark:text-rose-300"
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                            Kritis
+                          </Badge>
+                        )
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="border-slate-200 bg-slate-50 text-slate-500 text-[10px] gap-1 dark:bg-slate-800 dark:text-slate-400"
+                        >
+                          <HeartPulse className="h-3 w-3" />
+                          Siap
+                        </Badge>
+                      )}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
                       {source.lastScrapedAt
