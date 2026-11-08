@@ -105,7 +105,7 @@ export default function ScrapingLogsPage() {
         <Button
           variant="ghost"
           size="sm"
-          className="gap-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          className="gap-2 text-muted-foreground hover:text-foreground font-semibold"
         >
           <ArrowLeft className="h-4 w-4" />
           Kembali ke Scraping Monitor
@@ -117,10 +117,10 @@ export default function ScrapingLogsPage() {
         description="Pemeriksaan mendalam atas seluruh proses ingestion, status job, dan jejak audit worker dari basis data."
       >
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={handleRefresh}
-          className="gap-1.5 text-xs"
+          className="gap-1.5 text-xs font-semibold border-border hover:bg-secondary"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
@@ -128,15 +128,15 @@ export default function ScrapingLogsPage() {
       </PageHeader>
 
       {/* Filter and Search Bar */}
-      <Card className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <Card className="rounded-xl border border-border bg-card p-4 shadow-2xs">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1">
-            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Cari ID job, nama portal media, atau pesan status..."
-              className="pl-9 text-xs"
+              className="pl-9 text-xs font-medium bg-background border-border focus:border-[#D9541E] focus:ring-1 focus:ring-[#D9541E]"
             />
           </div>
           <div className="flex items-center gap-1.5">
@@ -144,7 +144,11 @@ export default function ScrapingLogsPage() {
               variant={selectedLevel === "ALL" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedLevel("ALL")}
-              className="text-xs"
+              className={`text-xs font-semibold ${
+                selectedLevel === "ALL"
+                  ? "bg-[#D9541E] text-white hover:bg-[#C24412]"
+                  : "border-border hover:bg-secondary"
+              }`}
             >
               Semua ({jobs.length})
             </Button>
@@ -152,7 +156,11 @@ export default function ScrapingLogsPage() {
               variant={selectedLevel === "INFO" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedLevel("INFO")}
-              className="text-xs"
+              className={`text-xs font-semibold ${
+                selectedLevel === "INFO"
+                  ? "bg-[#D9541E] text-white hover:bg-[#C24412]"
+                  : "border-border hover:bg-secondary"
+              }`}
             >
               Sukses
             </Button>
@@ -160,7 +168,11 @@ export default function ScrapingLogsPage() {
               variant={selectedLevel === "ERROR" ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedLevel("ERROR")}
-              className="text-xs"
+              className={`text-xs font-semibold ${
+                selectedLevel === "ERROR"
+                  ? "bg-[#D9541E] text-white hover:bg-[#C24412]"
+                  : "border-border hover:bg-secondary"
+              }`}
             >
               Gagal
             </Button>
@@ -170,7 +182,7 @@ export default function ScrapingLogsPage() {
 
       {/* Logs Table */}
       {loading ? (
-        <Card className="p-4 bg-white dark:bg-slate-900 rounded-xl">
+        <Card className="p-4 bg-card border-border rounded-xl">
           <TableRowSkeleton columns={5} />
           <TableRowSkeleton columns={5} />
         </Card>
@@ -181,17 +193,17 @@ export default function ScrapingLogsPage() {
           onRetry={handleRefresh}
         />
       ) : filteredJobs.length === 0 ? (
-        <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-xl border border-border bg-card p-6 shadow-2xs">
           <EmptyState
             title="Tidak Ada Catatan Log Sesuai Filter"
             description="Belum ada audit log yang sesuai dengan filter pencarian atau riwayat job scraping."
           />
         </Card>
       ) : (
-        <Card className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs font-mono">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-sans font-semibold text-slate-600 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+              <thead className="border-b border-border bg-secondary/50 text-[11px] font-sans font-bold text-muted-foreground uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Level</th>
                   <th className="py-3 px-4">Waktu</th>
@@ -201,20 +213,20 @@ export default function ScrapingLogsPage() {
                   <th className="py-3 px-4 text-right">Detail</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 font-sans dark:divide-slate-800">
+              <tbody className="divide-y divide-border/60 font-sans">
                 {filteredJobs.map((job) => {
                   const isErr = job.status === "FAILED" || Boolean(job.errorMessage);
 
                   return (
                     <tr
                       key={job.id}
-                      className="hover:bg-slate-50/70 transition dark:hover:bg-slate-800/50"
+                      className="hover:bg-secondary/40 transition-colors"
                     >
                       <td className="py-3 px-4 whitespace-nowrap">
                         {isErr ? (
                           <Badge
                             variant="outline"
-                            className="border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/60 dark:text-rose-300 gap-1 text-[10px]"
+                            className="border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300 gap-1 text-[10px] font-bold"
                           >
                             <AlertCircle className="h-3 w-3" />
                             ERROR
@@ -222,23 +234,23 @@ export default function ScrapingLogsPage() {
                         ) : (
                           <Badge
                             variant="outline"
-                            className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/60 dark:text-emerald-300 gap-1 text-[10px]"
+                            className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 gap-1 text-[10px] font-bold"
                           >
                             <Info className="h-3 w-3" />
                             INFO
                           </Badge>
                         )}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap text-slate-500 font-mono text-[11px] dark:text-slate-400">
+                      <td className="py-3 px-4 whitespace-nowrap text-muted-foreground font-mono text-[11px]">
                         {new Date(job.createdAt).toLocaleString("id-ID")}
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px] text-slate-700 dark:text-slate-300">
+                      <td className="py-3 px-4 whitespace-nowrap font-mono text-[11px] font-bold text-foreground">
                         {job.id.slice(0, 8)}...
                       </td>
-                      <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-900 dark:text-white">
+                      <td className="py-3 px-4 whitespace-nowrap font-semibold text-foreground">
                         {job.source?.name || "Batch (Semua Sumber)"}
                       </td>
-                      <td className="py-3 px-4 text-slate-700 dark:text-slate-300 max-w-md">
+                      <td className="py-3 px-4 text-foreground max-w-md font-medium">
                         {job.errorMessage || `Eksekusi selesai dengan status ${job.status}`}
                       </td>
                       <td className="py-3 px-4 whitespace-nowrap text-right">
@@ -246,7 +258,7 @@ export default function ScrapingLogsPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => setActiveLogModal(job)}
-                          className="h-7 px-2 text-xs text-teal-700 hover:bg-teal-50 dark:text-teal-300"
+                          className="h-7 px-2.5 text-xs font-bold text-[#D9541E] hover:bg-[#D9541E]/10"
                         >
                           <Eye className="h-3.5 w-3.5 mr-1" />
                           JSON
@@ -263,18 +275,18 @@ export default function ScrapingLogsPage() {
 
       {/* JSON Payload Inspector Modal */}
       {activeLogModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-xs">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
               <div className="flex items-center gap-2">
-                <Code className="h-4 w-4 text-teal-600" />
-                <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+                <Code className="h-4 w-4 text-[#D9541E]" />
+                <h2 className="text-sm font-bold text-foreground">
                   Audit Payload Inspector ({activeLogModal.id})
                 </h2>
               </div>
               <button
                 onClick={() => setActiveLogModal(null)}
-                className="rounded-md p-1 text-slate-400 hover:text-slate-600"
+                className="rounded-md p-1 text-muted-foreground hover:text-foreground"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -282,10 +294,10 @@ export default function ScrapingLogsPage() {
 
             <div className="mt-4 space-y-3">
               <div>
-                <span className="text-[11px] font-medium text-slate-400 block mb-1">
+                <span className="text-[11px] font-bold text-muted-foreground block mb-1">
                   Metadata Job Record:
                 </span>
-                <pre className="p-3 rounded-lg bg-slate-950 text-slate-100 text-xs font-mono overflow-x-auto max-h-60">
+                <pre className="p-3 rounded-lg bg-secondary/80 text-foreground text-xs font-mono overflow-x-auto max-h-60 border border-border">
                   {JSON.stringify(activeLogModal, null, 2)}
                 </pre>
               </div>
@@ -296,6 +308,7 @@ export default function ScrapingLogsPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => setActiveLogModal(null)}
+                className="border-border hover:bg-secondary font-semibold"
               >
                 Tutup
               </Button>

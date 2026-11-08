@@ -41,16 +41,16 @@ async function NewsDetailContent({
     return (
       <div className="space-y-6">
         <Link href="/news">
-          <Button variant="ghost" size="sm" className="gap-2 text-slate-500">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
             Kembali ke News Explorer
           </Button>
         </Link>
-        <Card className="p-8 text-center bg-white dark:bg-slate-900 rounded-xl">
-          <h2 className="text-base font-semibold text-slate-900 dark:text-white">
+        <Card className="p-8 text-center bg-card border-border rounded-xl">
+          <h2 className="text-base font-bold text-foreground">
             Artikel Tidak Ditemukan
           </h2>
-          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+          <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto font-medium">
             Artikel dengan ID &quot;{id}&quot; belum terdaftar di basis data atau
             telah dihapus.
           </p>
@@ -66,7 +66,7 @@ async function NewsDetailContent({
         <Button
           variant="ghost"
           size="sm"
-          className="gap-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+          className="gap-2 text-muted-foreground hover:text-foreground font-semibold"
         >
           <ArrowLeft className="h-4 w-4" />
           Kembali ke News Explorer
@@ -91,7 +91,7 @@ async function NewsDetailContent({
           target="_blank"
           rel="noopener noreferrer"
         >
-          <Button size="sm" className="gap-2 bg-teal-600 text-white hover:bg-teal-700">
+          <Button size="sm" className="gap-2 bg-[#D9541E] text-white hover:bg-[#C24412] font-semibold shadow-xs">
             <ExternalLink className="h-4 w-4" />
             Buka Berita Asli di {news.source?.name}
           </Button>
@@ -102,19 +102,19 @@ async function NewsDetailContent({
         {/* Main Article & Summary */}
         <div className="space-y-6 lg:col-span-2">
           {/* Metadata bar */}
-          <Card className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-              <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                <Globe className="h-4 w-4 text-slate-400" />
+          <Card className="rounded-xl border border-border bg-card p-4 shadow-2xs">
+            <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-muted-foreground">
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <Globe className="h-4 w-4 text-[#D9541E]" />
                 {news.source?.name || "Portal Berita"}
               </span>
-              <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                <MapPin className="h-4 w-4 text-teal-600" />
+              <span className="flex items-center gap-1.5 font-semibold text-foreground">
+                <MapPin className="h-4 w-4 text-[#D9541E]" />
                 {news.locationName || "Kota Medan"} ({news.locationLevel || "KOTA"})
               </span>
               {news.publishedAt && (
-                <span className="flex items-center gap-1.5">
-                  <Calendar className="h-4 w-4 text-slate-400" />
+                <span className="flex items-center gap-1.5 font-mono">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
                   {new Date(news.publishedAt).toLocaleDateString("id-ID", {
                     day: "2-digit",
                     month: "long",
@@ -124,7 +124,7 @@ async function NewsDetailContent({
               )}
               {news.author && (
                 <span className="flex items-center gap-1.5">
-                  <User className="h-4 w-4 text-slate-400" />
+                  <User className="h-4 w-4 text-muted-foreground" />
                   {news.author}
                 </span>
               )}
@@ -133,76 +133,79 @@ async function NewsDetailContent({
 
           {/* AI Summary & Classification Card */}
           {news.aiSummary && (
-            <Card className="rounded-xl border border-teal-200/80 bg-teal-50/40 p-5 shadow-xs dark:border-teal-900/60 dark:bg-teal-950/20 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-teal-100 pb-3 dark:border-teal-900/40">
+            <Card className="rounded-xl border border-[#D9541E]/30 bg-[#D9541E]/8 p-5 shadow-2xs space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#D9541E]/20 pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-teal-600 text-white dark:bg-teal-500">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#D9541E] text-white shadow-2xs">
                     <Sparkles className="h-3.5 w-3.5" />
                   </div>
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-teal-950 dark:text-teal-200">
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-foreground">
                     Ringkasan AI (2-4 Kalimat)
                   </h2>
                 </div>
                 {news.aiConfidence && (
-                  <span className="text-[11px] font-semibold text-teal-800 bg-teal-100/80 px-2 py-0.5 rounded dark:bg-teal-900/80 dark:text-teal-200">
+                  <span className="text-[11px] font-bold text-[#D9541E] bg-[#D9541E]/15 border border-[#D9541E]/30 px-2 py-0.5 rounded font-mono">
                     Keyakinan AI: {(news.aiConfidence * 100).toFixed(0)}%
                   </span>
                 )}
               </div>
 
-              <p className="text-sm leading-relaxed text-slate-800 dark:text-slate-200 font-medium">
+              <p className="text-sm leading-relaxed text-foreground font-semibold">
                 {news.aiSummary}
               </p>
 
               {news.aiReason && (
-                <div className="text-xs text-slate-600 dark:text-slate-400 bg-white/70 p-2.5 rounded-lg border border-teal-100 dark:bg-slate-900/50 dark:border-teal-900/40">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                <div className="text-xs font-medium text-foreground bg-card/80 p-3 rounded-lg border border-border">
+                  <span className="font-bold text-[#D9541E]">
                     Dasar Klasifikasi:{" "}
                   </span>
                   {news.aiReason}
                 </div>
               )}
 
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic">
+              <p className="text-[10px] text-muted-foreground italic font-medium">
                 * Catatan: Ringkasan dan klasifikasi ini dihasilkan otomatis oleh model pemrosesan bahasa alami (AI) untuk membantu pemetaan awal informasi publik.
               </p>
             </Card>
           )}
 
           {/* Excerpt and Content */}
-          <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs space-y-5 dark:border-slate-800 dark:bg-slate-900">
+          <Card className="rounded-xl border border-border bg-card p-6 shadow-2xs space-y-5">
             {news.description && (
-              <div className="rounded-lg border border-teal-200/60 bg-teal-50/50 p-4 dark:border-teal-900/40 dark:bg-teal-950/20">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-teal-900 dark:text-teal-300 mb-1.5">
+              <div className="rounded-lg border border-border bg-secondary/40 p-4">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-[#D9541E] mb-1.5">
                   Ringkasan Intisari (Lead Summary):
                 </h2>
-                <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                <p className="text-sm leading-relaxed text-foreground font-medium">
                   {news.description}
                 </p>
               </div>
             )}
 
             {news.content && (
-              <div className="space-y-3 pt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-                <h3 className="font-semibold text-slate-900 dark:text-white">
+              <div className="space-y-3 pt-2 text-sm leading-relaxed text-foreground">
+                <h3 className="font-bold text-base">
                   Cuplikan Isi Berita:
                 </h3>
-                <p>{news.content}</p>
+                <p className="font-medium text-muted-foreground leading-relaxed">
+                  {news.content}
+                </p>
               </div>
             )}
 
-            <div className="border-t border-slate-100 pt-4 flex items-center justify-between dark:border-slate-800">
-              <span className="text-xs text-slate-400">
+            <div className="border-t border-border/80 pt-4 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground font-medium">
                 Status Relevansi:{" "}
-                <strong className="text-slate-700 dark:text-slate-300">
+                <strong className="text-foreground font-bold">
                   {news.isRelevant ? "Terverifikasi Relevan" : "Umum"}
                 </strong>
               </span>
+
               <a
                 href={news.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs font-medium text-teal-700 hover:underline flex items-center gap-1 dark:text-teal-400"
+                className="text-xs font-bold text-[#D9541E] hover:underline flex items-center gap-1"
               >
                 Baca artikel lengkap di portal asli &rarr;
               </a>
@@ -212,37 +215,37 @@ async function NewsDetailContent({
 
         {/* Sidebar: Provenance & Technical Audit Trail */}
         <div className="space-y-6">
-          <Card className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2 pb-3 border-b border-slate-100 text-slate-900 font-semibold text-sm dark:border-slate-800 dark:text-white">
-              <ShieldCheck className="h-4 w-4 text-teal-600" />
+          <Card className="rounded-xl border border-border bg-card p-5 shadow-2xs">
+            <div className="flex items-center gap-2 pb-3 border-b border-border/80 text-foreground font-bold text-sm">
+              <ShieldCheck className="h-4 w-4 text-[#D9541E]" />
               <span>Data Provenance & Audit Trail</span>
             </div>
 
             <div className="mt-4 space-y-3.5 text-xs">
               <div>
-                <span className="text-slate-400 block mb-0.5">ID Internal Database:</span>
-                <code className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-mono text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+                <span className="text-muted-foreground font-medium block mb-0.5">ID Internal Database:</span>
+                <code className="rounded bg-secondary px-1.5 py-0.5 text-[11px] font-mono font-semibold text-foreground border border-border">
                   {news.id}
                 </code>
               </div>
 
               <div>
-                <span className="text-slate-400 block mb-0.5">Canonical Normalized URL:</span>
-                <p className="font-mono text-[11px] break-all text-slate-700 bg-slate-50 p-2 rounded border border-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300">
+                <span className="text-muted-foreground font-medium block mb-0.5">Canonical Normalized URL:</span>
+                <p className="font-mono text-[11px] break-all text-foreground bg-secondary/50 p-2.5 rounded-lg border border-border">
                   {news.normalizedUrl}
                 </p>
               </div>
 
               <div>
-                <span className="text-slate-400 block mb-0.5">Tautan Asli Sebelum Normalisasi:</span>
-                <p className="font-mono text-[11px] break-all text-slate-500">
+                <span className="text-muted-foreground font-medium block mb-0.5">Tautan Asli Sebelum Normalisasi:</span>
+                <p className="font-mono text-[11px] break-all text-muted-foreground">
                   {news.url}
                 </p>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div className="rounded-lg bg-amber-50/70 border border-amber-200 p-3 text-[11px] text-amber-900 dark:bg-amber-950/40 dark:border-amber-900/60 dark:text-amber-300">
-                  <strong>Kepatuhan Hak Cipta & Etika:</strong> PovertyWatch
+              <div className="pt-2 border-t border-border/80">
+                <div className="rounded-lg bg-[#D9541E]/10 border border-[#D9541E]/25 p-3 text-[11px] text-foreground font-medium">
+                  <strong className="font-bold text-[#D9541E]">Kepatuhan Hak Cipta & Etika:</strong> PovertyWatch
                   hanya mengindeks metadata, cuplikan awal, dan tautan asli. Naskah
                   lengkap menjadi hak eksklusif penerbit media bersangkutan.
                 </div>
@@ -260,7 +263,7 @@ function NewsDetailSkeleton() {
     <div className="space-y-6">
       <Skeleton className="h-8 w-64" />
       <Skeleton className="h-16 w-full" />
-      <Card className="rounded-xl border border-slate-200/80 p-6">
+      <Card className="rounded-xl border border-border p-6 bg-card">
         <Skeleton className="h-40 w-full" />
       </Card>
     </div>

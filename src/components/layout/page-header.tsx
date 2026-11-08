@@ -17,13 +17,13 @@ export function PageHeader({
     <div className="flex flex-col gap-4 pb-6 md:flex-row md:items-center md:justify-between">
       <div className="space-y-1">
         <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-slate-50">
+          <h1 className="text-2xl font-extrabold tracking-tight text-foreground sm:text-3xl">
             {title}
           </h1>
           {badge}
         </div>
         {description && (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm font-medium text-muted-foreground leading-relaxed">
             {description}
           </p>
         )}
@@ -34,4 +34,3 @@ export function PageHeader({
     </div>
   );
 }
-

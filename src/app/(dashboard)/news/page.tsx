@@ -103,32 +103,28 @@ export default function NewsExplorerPage() {
         if (selectedLocation !== "ALL") params.set("location", selectedLocation);
 
         const res = await apiFetch<NewsItem[]>(`/api/news?${params.toString()}`);
-
         if (!ignore) {
-          if (res.data) {
+          if (res.success && res.data) {
             setNews(res.data);
+            if (res.meta) {
+              setTotalPages(res.meta.totalPages || 1);
+              setTotalCount(res.meta.total || res.data.length);
+            }
           }
-          if (res.meta) {
-            setTotalCount(res.meta.total || 0);
-            setTotalPages(res.meta.totalPages || 1);
-          }
+          setError(null);
         }
       } catch (err: unknown) {
         if (!ignore) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Gagal memuat daftar berita dari backend."
-          );
+          const msg = err instanceof Error ? err.message : "Gagal memuat berita";
+          setError(msg);
         }
       } finally {
-        if (!ignore) {
-          setLoading(false);
-        }
+        if (!ignore) setLoading(false);
       }
     }
 
     loadNews();
+
     return () => {
       ignore = true;
     };
@@ -152,8 +148,6 @@ export default function NewsExplorerPage() {
   };
 
   const handleRetry = () => {
-    setLoading(true);
-    setError(null);
     setRefreshIndex((prev) => prev + 1);
   };
 
@@ -207,17 +201,17 @@ export default function NewsExplorerPage() {
             variant="outline"
             size="sm"
             onClick={handleExportCSV}
-            className="gap-1.5 text-xs text-slate-700 dark:text-slate-300"
+            className="gap-1.5 text-xs font-semibold border-border hover:bg-secondary"
             title="Ekspor data hasil filter ke CSV"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download className="h-3.5 w-3.5 text-muted-foreground" />
             CSV ({totalCount})
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportExcel}
-            className="gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 dark:text-emerald-400"
+            className="gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 border-border hover:bg-secondary"
             title="Ekspor ke Excel Workbook (XLSX) dengan lembar metodologi"
           >
             <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -227,7 +221,7 @@ export default function NewsExplorerPage() {
             variant="outline"
             size="sm"
             onClick={handleExportPDF}
-            className="gap-1.5 text-xs text-rose-700 hover:text-rose-800 dark:text-rose-400"
+            className="gap-1.5 text-xs font-semibold text-[#D9541E] hover:text-[#C24412] border-border hover:bg-secondary"
             title="Unduh laporan ringkasan berita dalam format PDF"
           >
             <FileText className="h-3.5 w-3.5" />
@@ -237,12 +231,12 @@ export default function NewsExplorerPage() {
       </PageHeader>
 
       {/* Filter and Search Panel */}
-      <Card className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <Card className="rounded-xl border border-border bg-card p-4 shadow-2xs">
         <div className="space-y-3">
           {/* Search bar & View mode */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1">
-              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchQuery}
                 onChange={(e) => {
@@ -250,17 +244,17 @@ export default function NewsExplorerPage() {
                   setCurrentPage(1);
                 }}
                 placeholder="Cari kata kunci, judul, atau nama kecamatan (misal: 'stunting belawan')..."
-                className="pl-9 text-xs"
+                className="pl-9 text-xs font-medium bg-background border-border focus:border-[#D9541E] focus:ring-1 focus:ring-[#D9541E]"
               />
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5 dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex items-center rounded-lg border border-border bg-secondary/50 p-0.5">
                 <button
                   onClick={() => setViewMode("table")}
-                  className={`rounded-md p-1.5 text-xs transition ${
+                  className={`rounded-md p-1.5 text-xs transition font-medium ${
                     viewMode === "table"
-                      ? "bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white"
-                      : "text-slate-500 hover:text-slate-900"
+                      ? "bg-[#D9541E] text-white shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   aria-label="Tampilan Tabel"
                 >
@@ -268,10 +262,10 @@ export default function NewsExplorerPage() {
                 </button>
                 <button
                   onClick={() => setViewMode("grid")}
-                  className={`rounded-md p-1.5 text-xs transition ${
+                  className={`rounded-md p-1.5 text-xs transition font-medium ${
                     viewMode === "grid"
-                      ? "bg-white text-slate-900 shadow-xs dark:bg-slate-800 dark:text-white"
-                      : "text-slate-500 hover:text-slate-900"
+                      ? "bg-[#D9541E] text-white shadow-2xs"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   aria-label="Tampilan Kartu"
                 >
@@ -287,7 +281,7 @@ export default function NewsExplorerPage() {
                   variant="ghost"
                   size="sm"
                   onClick={handleResetFilters}
-                  className="h-8 gap-1.5 text-xs text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                  className="h-8 gap-1.5 text-xs font-bold text-[#D9541E] hover:bg-[#D9541E]/10 hover:text-[#C24412]"
                 >
                   <RotateCcw className="h-3.5 w-3.5" />
                   Reset
@@ -297,10 +291,10 @@ export default function NewsExplorerPage() {
           </div>
 
           {/* Filter Dropdowns Grid */}
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 md:grid-cols-4 pt-2.5 border-t border-border/80">
             {/* Category Filter */}
             <div>
-              <label className="text-[11px] font-medium text-slate-500 block mb-1">
+              <label className="text-[11px] font-bold text-muted-foreground block mb-1">
                 Kategori Fenomena
               </label>
               <select
@@ -309,7 +303,7 @@ export default function NewsExplorerPage() {
                   setSelectedCategory(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:border-[#D9541E] focus:outline-hidden"
               >
                 <option value="ALL">Semua Kategori</option>
                 {categories.map((cat) => (
@@ -322,7 +316,7 @@ export default function NewsExplorerPage() {
 
             {/* Source Filter */}
             <div>
-              <label className="text-[11px] font-medium text-slate-500 block mb-1">
+              <label className="text-[11px] font-bold text-muted-foreground block mb-1">
                 Sumber Portal Media
               </label>
               <select
@@ -331,7 +325,7 @@ export default function NewsExplorerPage() {
                   setSelectedSource(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:border-[#D9541E] focus:outline-hidden"
               >
                 <option value="ALL">Semua Sumber Media</option>
                 {sources.map((src) => (
@@ -344,7 +338,7 @@ export default function NewsExplorerPage() {
 
             {/* Location Filter */}
             <div>
-              <label className="text-[11px] font-medium text-slate-500 block mb-1">
+              <label className="text-[11px] font-bold text-muted-foreground block mb-1">
                 Wilayah Kecamatan
               </label>
               <select
@@ -353,7 +347,7 @@ export default function NewsExplorerPage() {
                   setSelectedLocation(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:border-[#D9541E] focus:outline-hidden"
               >
                 <option value="ALL">Seluruh Kota Medan</option>
                 <option value="Medan Belawan">Medan Belawan</option>
@@ -369,7 +363,7 @@ export default function NewsExplorerPage() {
 
             {/* Sorting */}
             <div>
-              <label className="text-[11px] font-medium text-slate-500 block mb-1">
+              <label className="text-[11px] font-bold text-muted-foreground block mb-1">
                 Urutan Berita
               </label>
               <select
@@ -377,7 +371,7 @@ export default function NewsExplorerPage() {
                 onChange={(e) =>
                   setSortBy(e.target.value as "newest" | "oldest")
                 }
-                className="h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-xs text-slate-800 focus:outline-hidden dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground focus:border-[#D9541E] focus:outline-hidden"
               >
                 <option value="newest">Terbaru (Default)</option>
                 <option value="oldest">Terlama</option>
@@ -388,18 +382,18 @@ export default function NewsExplorerPage() {
       </Card>
 
       {/* Results Count & Meta */}
-      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+      <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
         <span>
-          Menampilkan <strong>{totalCount}</strong> artikel terverifikasi dari database
+          Menampilkan <strong className="text-foreground font-bold">{totalCount}</strong> artikel terverifikasi dari database
         </span>
-        <span>
+        <span className="font-mono">
           Halaman {currentPage} dari {totalPages}
         </span>
       </div>
 
       {/* Content Rendering: Loading, Error, Empty, or Data */}
       {loading ? (
-        <Card className="p-4 bg-white dark:bg-slate-900 rounded-xl">
+        <Card className="p-4 bg-card border-border rounded-xl">
           <TableRowSkeleton columns={6} />
           <TableRowSkeleton columns={6} />
           <TableRowSkeleton columns={6} />
@@ -411,7 +405,7 @@ export default function NewsExplorerPage() {
           onRetry={handleRetry}
         />
       ) : news.length === 0 ? (
-        <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-xl border border-border bg-card p-6 shadow-2xs">
           <EmptyState
             title="Tidak Ada Artikel Ditemukan"
             description="Tidak ada artikel berita yang cocok dengan kriteria pencarian atau filter saat ini. Coba ubah kata kunci atau jalankan ingestion scraper."
@@ -420,7 +414,7 @@ export default function NewsExplorerPage() {
                 variant="outline"
                 size="sm"
                 onClick={handleResetFilters}
-                className="gap-2"
+                className="gap-2 border-border font-semibold hover:bg-secondary"
               >
                 <RotateCcw className="h-4 w-4" />
                 Reset Semua Filter
@@ -430,10 +424,10 @@ export default function NewsExplorerPage() {
         </Card>
       ) : viewMode === "table" ? (
         /* Table View */
-        <Card className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+              <thead className="border-b border-border bg-secondary/50 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">Judul Berita</th>
                   <th className="py-3 px-4">Kategori</th>
@@ -443,21 +437,21 @@ export default function NewsExplorerPage() {
                   <th className="py-3 px-4 text-right">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-border/60">
                 {news.map((item) => (
                   <tr
                     key={item.id}
-                    className="hover:bg-slate-50/70 transition dark:hover:bg-slate-800/50"
+                    className="hover:bg-secondary/40 transition-colors"
                   >
                     <td className="py-3 px-4 max-w-md">
                       <Link
                         href={`/news/${item.id}`}
-                        className="font-medium text-slate-900 hover:text-teal-700 transition dark:text-white dark:hover:text-teal-400 line-clamp-2"
+                        className="font-bold text-foreground hover:text-[#D9541E] transition-colors line-clamp-2 leading-snug"
                       >
                         {item.title}
                       </Link>
                       {item.description && (
-                        <p className="mt-0.5 text-[11px] text-slate-500 line-clamp-1 dark:text-slate-400">
+                        <p className="mt-1 text-[11px] font-medium text-muted-foreground line-clamp-1">
                           {item.description}
                         </p>
                       )}
@@ -469,19 +463,19 @@ export default function NewsExplorerPage() {
                           slug={item.category.slug}
                         />
                       ) : (
-                        <span className="text-slate-400 text-[11px]">Umum</span>
+                        <span className="text-muted-foreground text-[11px]">Umum</span>
                       )}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 text-slate-600 dark:text-slate-300">
-                        <MapPin className="h-3 w-3 text-slate-400" />
+                      <span className="inline-flex items-center gap-1 font-semibold text-foreground">
+                        <MapPin className="h-3 w-3 text-[#D9541E]" />
                         {item.locationName || "Kota Medan"}
                       </span>
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-300">
+                    <td className="py-3 px-4 whitespace-nowrap font-medium text-foreground">
                       {item.source?.name || "-"}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-500 dark:text-slate-400">
+                    <td className="py-3 px-4 whitespace-nowrap font-mono text-muted-foreground">
                       {item.publishedAt
                         ? new Date(item.publishedAt).toLocaleDateString("id-ID", {
                             day: "2-digit",
@@ -496,7 +490,7 @@ export default function NewsExplorerPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2 text-xs text-teal-700 hover:bg-teal-50 dark:text-teal-300"
+                            className="h-7 px-2.5 text-xs font-bold text-[#D9541E] hover:bg-[#D9541E]/10"
                           >
                             Detail
                           </Button>
@@ -505,7 +499,7 @@ export default function NewsExplorerPage() {
                           href={item.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
+                          className="rounded-md p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                           title="Buka sumber asli"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
@@ -524,7 +518,7 @@ export default function NewsExplorerPage() {
           {news.map((item) => (
             <Card
               key={item.id}
-              className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-2xs transition hover:shadow-xs"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 pb-2">
@@ -534,9 +528,9 @@ export default function NewsExplorerPage() {
                       slug={item.category.slug}
                     />
                   ) : (
-                    <span className="text-[11px] text-slate-400">Umum</span>
+                    <span className="text-[11px] font-medium text-muted-foreground">Umum</span>
                   )}
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] font-mono font-medium text-muted-foreground">
                     {item.publishedAt
                       ? new Date(item.publishedAt).toLocaleDateString("id-ID")
                       : ""}
@@ -544,25 +538,25 @@ export default function NewsExplorerPage() {
                 </div>
                 <Link
                   href={`/news/${item.id}`}
-                  className="font-semibold text-slate-900 hover:text-teal-700 transition dark:text-white dark:hover:text-teal-400 text-sm block mt-1"
+                  className="font-bold text-foreground hover:text-[#D9541E] transition-colors text-sm block mt-1 leading-snug"
                 >
                   {item.title}
                 </Link>
                 {item.description && (
-                  <p className="mt-2 text-xs text-slate-600 line-clamp-3 dark:text-slate-300">
+                  <p className="mt-2 text-xs font-medium text-muted-foreground line-clamp-3 leading-relaxed">
                     {item.description}
                   </p>
                 )}
               </div>
 
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs text-slate-500 dark:border-slate-800">
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              <div className="mt-4 flex items-center justify-between border-t border-border/80 pt-3 text-xs">
+                <span className="flex items-center gap-1 font-medium text-muted-foreground">
+                  <MapPin className="h-3.5 w-3.5 text-[#D9541E]" />
                   {item.locationName || "Kota Medan"} &bull; {item.source?.name}
                 </span>
                 <Link
                   href={`/news/${item.id}`}
-                  className="font-medium text-teal-700 hover:underline dark:text-teal-400"
+                  className="font-bold text-[#D9541E] hover:underline"
                 >
                   Lihat Detail &rarr;
                 </Link>
@@ -574,13 +568,13 @@ export default function NewsExplorerPage() {
 
       {/* Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-200 pt-4 dark:border-slate-800">
+        <div className="flex items-center justify-between border-t border-border/80 pt-4">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
-            className="text-xs"
+            className="text-xs font-semibold border-border hover:bg-secondary"
           >
             &larr; Sebelumnya
           </Button>
@@ -592,10 +586,10 @@ export default function NewsExplorerPage() {
                 <button
                   key={pageNumber}
                   onClick={() => setCurrentPage(pageNumber)}
-                  className={`h-8 w-8 rounded-lg text-xs font-medium transition ${
+                  className={`h-8 w-8 rounded-lg text-xs font-mono font-bold transition ${
                     currentPage === pageNumber
-                      ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
+                      ? "bg-[#D9541E] text-white shadow-2xs"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
                 >
                   {pageNumber}
@@ -609,7 +603,7 @@ export default function NewsExplorerPage() {
             size="sm"
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="text-xs"
+            className="text-xs font-semibold border-border hover:bg-secondary"
           >
             Berikutnya &rarr;
           </Button>

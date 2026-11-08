@@ -19,17 +19,17 @@ export function ErrorState({
   return (
     <div
       className={cn(
-        "flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-rose-200 bg-rose-50/40 p-6 text-center dark:border-rose-900/50 dark:bg-rose-950/20",
+        "flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center transition-colors",
         className
       )}
     >
-      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-rose-100 text-rose-600 dark:bg-rose-900/40 dark:text-rose-400">
+      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-destructive/15 text-destructive">
         <AlertCircle className="h-5 w-5" />
       </div>
-      <h3 className="mt-3.5 text-base font-semibold text-slate-900 dark:text-white">
+      <h3 className="mt-3.5 text-base font-bold text-foreground">
         {title}
       </h3>
-      <p className="mt-1.5 max-w-sm text-sm text-slate-600 dark:text-slate-400">
+      <p className="mt-1.5 max-w-sm text-sm font-medium text-muted-foreground leading-relaxed">
         {description}
       </p>
       {onRetry && (
@@ -37,7 +37,7 @@ export function ErrorState({
           variant="outline"
           size="sm"
           onClick={onRetry}
-          className="mt-4 gap-2 border-slate-300 hover:bg-white dark:border-slate-700"
+          className="mt-4 gap-2 border-border hover:bg-card"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Coba Lagi
@@ -46,4 +46,3 @@ export function ErrorState({
     </div>
   );
 }
-

@@ -12,12 +12,12 @@ export default function DashboardLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-background text-foreground transition-colors">
       {/* Desktop Fixed Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:z-40 lg:flex lg:w-64 lg:flex-col">
         <Suspense
           fallback={
-            <div className="h-full w-64 border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950" />
+            <div className="h-full w-64 border-r border-border bg-sidebar" />
           }
         >
           <AppSidebar />
@@ -29,15 +29,15 @@ export default function DashboardLayout({
         <div className="fixed inset-0 z-50 lg:hidden">
           {/* Backdrop overlay */}
           <div
-            className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity"
+            className="fixed inset-0 bg-background/80 backdrop-blur-xs transition-opacity"
             onClick={() => setMobileMenuOpen(false)}
             aria-hidden="true"
           />
           {/* Slide-over panel */}
-          <div className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col shadow-xl">
+          <div className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col shadow-2xl">
             <Suspense
               fallback={
-                <div className="h-full w-72 bg-white dark:bg-slate-950" />
+                <div className="h-full w-72 bg-sidebar border-r border-border" />
               }
             >
               <AppSidebar onClose={() => setMobileMenuOpen(false)} />
@@ -53,7 +53,7 @@ export default function DashboardLayout({
           <div className="mx-auto max-w-7xl">
             <Suspense
               fallback={
-                <div className="py-8 text-center text-xs text-slate-400">
+                <div className="py-8 text-center text-xs font-medium text-muted-foreground">
                   Memuat konten...
                 </div>
               }

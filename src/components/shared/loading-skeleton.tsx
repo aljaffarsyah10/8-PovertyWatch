@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 
 export function StatCardSkeleton() {
   return (
-    <Card className="rounded-xl border border-slate-200/80 p-5 dark:border-slate-800">
+    <Card className="rounded-xl border border-border p-5 bg-card">
       <div className="flex items-center justify-between">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-9 w-9 rounded-lg" />
@@ -17,7 +17,7 @@ export function StatCardSkeleton() {
 
 export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
   return (
-    <div className="flex items-center gap-4 py-3.5 border-b border-slate-100 px-4 dark:border-slate-800">
+    <div className="flex items-center gap-4 py-3.5 border-b border-border/60 px-4">
       {Array.from({ length: columns }).map((_, idx) => (
         <Skeleton
           key={idx}
@@ -30,7 +30,7 @@ export function TableRowSkeleton({ columns = 5 }: { columns?: number }) {
 
 export function NewsCardSkeleton() {
   return (
-    <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-2xs">
       <div className="flex items-center gap-2">
         <Skeleton className="h-5 w-24 rounded-full" />
         <Skeleton className="h-4 w-20" />
@@ -38,11 +38,10 @@ export function NewsCardSkeleton() {
       <Skeleton className="mt-2.5 h-6 w-3/4" />
       <Skeleton className="mt-2 h-4 w-full" />
       <Skeleton className="mt-1 h-4 w-2/3" />
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-slate-800">
+      <div className="mt-4 flex items-center justify-between border-t border-border/80 pt-3">
         <Skeleton className="h-4 w-28" />
         <Skeleton className="h-4 w-16" />
       </div>
     </div>
   );
 }
-

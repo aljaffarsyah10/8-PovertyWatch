@@ -91,10 +91,10 @@ export default function CategoriesPage() {
         description="Konfigurasi taksonomi kemiskinan dan kata kunci (keywords) yang digunakan algoritma pencocokan berita."
       >
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={handleRefresh}
-          className="gap-1.5 text-xs"
+          className="gap-1.5 text-xs font-semibold border-border hover:bg-secondary"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
@@ -102,14 +102,14 @@ export default function CategoriesPage() {
       </PageHeader>
 
       {/* Search Bar */}
-      <Card className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+      <Card className="rounded-xl border border-border bg-card p-4 shadow-2xs">
         <div className="relative">
-          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari kategori atau kata kunci spesifik (misal: 'stunting', 'bansos', 'bedah rumah')..."
-            className="pl-9 text-xs"
+            className="pl-9 text-xs font-medium bg-background border-border focus:border-[#D9541E] focus:ring-1 focus:ring-[#D9541E]"
           />
         </div>
       </Card>
@@ -117,8 +117,8 @@ export default function CategoriesPage() {
       {/* Content */}
       {loading ? (
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <Card className="p-5 rounded-xl"><TableRowSkeleton columns={3} /></Card>
-          <Card className="p-5 rounded-xl"><TableRowSkeleton columns={3} /></Card>
+          <Card className="p-5 rounded-xl bg-card border-border"><TableRowSkeleton columns={3} /></Card>
+          <Card className="p-5 rounded-xl bg-card border-border"><TableRowSkeleton columns={3} /></Card>
         </div>
       ) : error ? (
         <ErrorState
@@ -127,7 +127,7 @@ export default function CategoriesPage() {
           onRetry={handleRefresh}
         />
       ) : filteredCategories.length === 0 ? (
-        <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-xl border border-border bg-card p-6 shadow-2xs">
           <EmptyState
             title="Tidak Ada Kategori Ditemukan"
             description="Kategori belum di-seed ke basis data atau tidak cocok dengan filter pencarian. Jalankan 'npm run seed' untuk mengisi kategori awal."
@@ -138,7 +138,7 @@ export default function CategoriesPage() {
           {filteredCategories.map((category) => (
             <Card
               key={category.id}
-              className="flex flex-col justify-between rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-slate-800 dark:bg-slate-900"
+              className="flex flex-col justify-between rounded-xl border border-border bg-card p-5 shadow-2xs transition hover:shadow-xs hover:border-border/80"
             >
               <div>
                 <div className="flex items-center justify-between gap-2 pb-2">
@@ -147,21 +147,21 @@ export default function CategoriesPage() {
                     slug={category.slug}
                     className="text-xs"
                   />
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  <span className="text-xs font-mono font-bold text-foreground">
                     {category._count?.news ?? 0} Artikel
                   </span>
                 </div>
 
                 {category.description && (
-                  <p className="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                  <p className="mt-2 text-xs font-medium text-muted-foreground leading-relaxed">
                     {category.description}
                   </p>
                 )}
 
                 {/* Keywords Tag List */}
-                <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="mt-4 pt-3.5 border-t border-border/80">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider dark:text-slate-400">
+                    <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                       Kata Kunci Relevansi ({category.keywords.length})
                     </span>
                   </div>
@@ -170,9 +170,9 @@ export default function CategoriesPage() {
                     {category.keywords.map((kw) => (
                       <span
                         key={kw.id}
-                        className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                        className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-[11px] font-medium text-foreground border border-border transition-colors hover:border-[#D9541E]/40"
                       >
-                        <Hash className="h-2.5 w-2.5 text-slate-400" />
+                        <Hash className="h-2.5 w-2.5 text-[#D9541E]" />
                         {kw.keyword}
                       </span>
                     ))}

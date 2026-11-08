@@ -132,8 +132,8 @@ export default function ScrapingMonitorPage() {
     <div className="space-y-6">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2.5 text-xs text-white shadow-lg dark:bg-white dark:text-slate-900 animate-in fade-in slide-in-from-bottom-2">
-          <Check className="h-4 w-4 text-emerald-400 dark:text-emerald-600" />
+        <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-xl bg-foreground px-4 py-3 text-xs font-semibold text-background shadow-xl border border-border animate-in fade-in slide-in-from-bottom-2">
+          <Check className="h-4 w-4 text-[#D9541E]" />
           <span>{notification}</span>
         </div>
       )}
@@ -144,17 +144,17 @@ export default function ScrapingMonitorPage() {
         description="Pantau proses background worker, jalankan scraping manual, dan audit eksekusi pengambilan berita."
       >
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           onClick={handleRefresh}
-          className="gap-1.5 text-xs"
+          className="gap-1.5 text-xs font-semibold border-border hover:bg-secondary"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
         </Button>
         <Link href="/scraping/logs">
-          <Button variant="outline" size="sm" className="gap-2">
-            <ScrollText className="h-4 w-4" />
+          <Button variant="outline" size="sm" className="gap-2 text-xs font-semibold border-border hover:bg-secondary">
+            <ScrollText className="h-4 w-4 text-[#D9541E]" />
             Audit Logs
           </Button>
         </Link>
@@ -162,7 +162,7 @@ export default function ScrapingMonitorPage() {
           size="sm"
           onClick={handleRunManualScrape}
           disabled={isTriggering || isAnyJobRunning}
-          className="gap-2 bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-75"
+          className="gap-2 bg-[#D9541E] text-white hover:bg-[#C24412] font-semibold disabled:opacity-75 shadow-xs"
         >
           {isTriggering || isAnyJobRunning ? (
             <>
@@ -180,19 +180,19 @@ export default function ScrapingMonitorPage() {
 
       {/* Worker Live Status Banner */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-xl border border-border bg-card p-4 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <Cpu className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[11px] font-medium text-slate-400 block">
+              <span className="text-[11px] font-bold text-muted-foreground block">
                 Status Worker Antrean
               </span>
-              <span className="inline-flex items-center gap-1.5 text-sm font-bold text-slate-900 dark:text-white">
+              <span className="inline-flex items-center gap-1.5 text-sm font-extrabold text-foreground">
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    isAnyJobRunning ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
+                    isAnyJobRunning ? "bg-[#D9541E] animate-pulse" : "bg-emerald-500"
                   }`}
                 />
                 {isAnyJobRunning ? "SEDANG MEMPROSES" : "STANDBY (NORMAL)"}
@@ -201,32 +201,32 @@ export default function ScrapingMonitorPage() {
           </div>
         </Card>
 
-        <Card className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-xl border border-border bg-card p-4 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-50 text-teal-600 dark:bg-teal-950 dark:text-teal-400">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#D9541E]/10 text-[#D9541E]">
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[11px] font-medium text-slate-400 block">
+              <span className="text-[11px] font-bold text-muted-foreground block">
                 Jadwal Cron Harian
               </span>
-              <span className="text-sm font-bold text-slate-900 dark:text-white">
+              <span className="text-sm font-extrabold text-foreground font-mono">
                 06:00:00 WIB (Asia/Jakarta)
               </span>
             </div>
           </div>
         </Card>
 
-        <Card className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-xl border border-border bg-card p-4 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-secondary text-foreground">
               <Layers className="h-5 w-5" />
             </div>
             <div>
-              <span className="text-[11px] font-medium text-slate-400 block">
+              <span className="text-[11px] font-bold text-muted-foreground block">
                 Protokol Anti-Duplikasi
               </span>
-              <span className="text-sm font-bold text-slate-900 dark:text-white">
+              <span className="text-sm font-extrabold text-foreground">
                 Normalized URL Hash
               </span>
             </div>
@@ -236,7 +236,7 @@ export default function ScrapingMonitorPage() {
 
       {/* Jobs History Table */}
       {loading ? (
-        <Card className="p-4 bg-white dark:bg-slate-900 rounded-xl">
+        <Card className="p-4 bg-card border-border rounded-xl">
           <TableRowSkeleton columns={7} />
           <TableRowSkeleton columns={7} />
         </Card>
@@ -247,7 +247,7 @@ export default function ScrapingMonitorPage() {
           onRetry={handleRefresh}
         />
       ) : jobs.length === 0 ? (
-        <Card className="rounded-xl border border-slate-200/80 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900">
+        <Card className="rounded-xl border border-border bg-card p-6 shadow-2xs">
           <EmptyState
             title="Belum Ada Riwayat Job Scraping"
             description="Tekan tombol 'Jalankan Scrape Manual' di atas untuk memicu proses ingestion pertama."
@@ -256,7 +256,7 @@ export default function ScrapingMonitorPage() {
                 size="sm"
                 onClick={handleRunManualScrape}
                 disabled={isTriggering}
-                className="gap-2"
+                className="gap-2 bg-[#D9541E] text-white hover:bg-[#C24412] font-semibold"
               >
                 <Play className="h-4 w-4" />
                 Mulai Scraping Sekarang
@@ -265,24 +265,24 @@ export default function ScrapingMonitorPage() {
           />
         </Card>
       ) : (
-        <Card className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center justify-between p-4 border-b border-slate-100 dark:border-slate-800">
+        <Card className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+          <div className="flex items-center justify-between p-4 border-b border-border">
             <div>
-              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+              <h2 className="text-sm font-bold text-foreground">
                 Riwayat Eksekusi Job Scraping
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs font-medium text-muted-foreground">
                 Catatan eksekusi terjadwal otomatis maupun manual dari database
               </p>
             </div>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs font-mono font-semibold text-muted-foreground">
               Total {jobs.length} Job Terdaftar
             </span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-semibold text-slate-600 uppercase tracking-wider dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
+              <thead className="border-b border-border bg-secondary/50 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 <tr>
                   <th className="py-3 px-4">ID Job</th>
                   <th className="py-3 px-4">Pemicu</th>
@@ -294,38 +294,38 @@ export default function ScrapingMonitorPage() {
                   <th className="py-3 px-4 text-right">Detail</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-border/60">
                 {jobs.map((job) => (
                   <tr
                     key={job.id}
-                    className="hover:bg-slate-50/70 transition dark:hover:bg-slate-800/50"
+                    className="hover:bg-secondary/40 transition-colors"
                   >
-                    <td className="py-3 px-4 font-mono font-medium text-slate-900 dark:text-white">
+                    <td className="py-3 px-4 font-mono font-bold text-foreground">
                       {job.id.slice(0, 8)}...
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
                       <span
-                        className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                        className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                           job.triggerType === "SCHEDULED"
-                            ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                            : "bg-teal-50 text-teal-800 border border-teal-200 dark:bg-teal-950 dark:text-teal-300 dark:border-teal-800"
+                            ? "bg-secondary text-foreground border border-border"
+                            : "bg-[#D9541E]/10 text-[#D9541E] border border-[#D9541E]/30"
                         }`}
                       >
                         {job.triggerType}
                       </span>
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-600 dark:text-slate-400">
+                    <td className="py-3 px-4 whitespace-nowrap font-mono text-muted-foreground">
                       {job.startedAt
                         ? new Date(job.startedAt).toLocaleString("id-ID")
                         : "Dalam antrean"}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-900 dark:text-white">
+                    <td className="py-3 px-4 whitespace-nowrap font-mono font-bold text-foreground">
                       {job.totalFound}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap font-bold text-emerald-600 dark:text-emerald-400">
+                    <td className="py-3 px-4 whitespace-nowrap font-mono font-bold text-emerald-600 dark:text-emerald-400">
                       +{job.totalNew}
                     </td>
-                    <td className="py-3 px-4 whitespace-nowrap text-slate-500">
+                    <td className="py-3 px-4 whitespace-nowrap font-mono text-muted-foreground">
                       {job.totalDuplicate}
                     </td>
                     <td className="py-3 px-4 whitespace-nowrap">
@@ -336,7 +336,7 @@ export default function ScrapingMonitorPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 px-2 text-xs text-teal-700 hover:bg-teal-50 dark:text-teal-300"
+                          className="h-7 px-2.5 text-xs font-bold text-[#D9541E] hover:bg-[#D9541E]/10"
                         >
                           Logs &rarr;
                         </Button>

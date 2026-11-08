@@ -17,22 +17,22 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         return {
           label: "Berhasil",
           classes:
-            "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800",
+            "bg-emerald-500/12 text-emerald-900 border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 font-semibold",
           dot: "bg-emerald-500",
         };
       case "RUNNING":
         return {
           label: "Berjalan",
           classes:
-            "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800",
-          dot: "bg-amber-500 animate-pulse",
+            "bg-[#D9541E]/12 text-[#B84010] border-[#D9541E]/30 dark:bg-[#D9541E]/20 dark:text-[#F38A5E] dark:border-[#D9541E]/40 font-semibold",
+          dot: "bg-[#D9541E] animate-pulse",
         };
       case "FAILED":
       case "ERROR":
         return {
           label: "Gagal",
           classes:
-            "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800",
+            "bg-rose-500/12 text-rose-900 border-rose-500/30 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/40 font-semibold",
           dot: "bg-rose-500",
         };
       case "PENDING":
@@ -40,8 +40,8 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         return {
           label: "Antrean",
           classes:
-            "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700",
-          dot: "bg-slate-400",
+            "bg-secondary text-foreground border-border font-medium",
+          dot: "bg-muted-foreground",
         };
     }
   };
@@ -52,14 +52,13 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     <Badge
       variant="outline"
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs shadow-2xs",
         config.classes,
         className
       )}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full", config.dot)} />
+      <span className={cn("h-1.5 w-1.5 rounded-full shrink-0", config.dot)} />
       {config.label}
     </Badge>
   );
 }
-

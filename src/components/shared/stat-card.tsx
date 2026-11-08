@@ -28,28 +28,29 @@ export function StatCard({
 }: StatCardProps) {
   const iconVariantStyles = {
     default:
-      "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+      "bg-[#D9541E]/10 text-[#D9541E] border border-[#D9541E]/20",
     success:
-      "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
     warning:
-      "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-400",
-    danger: "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-400",
+      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+    danger:
+      "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20",
   };
 
   return (
     <Card
       className={cn(
-        "relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-5 shadow-xs transition hover:shadow-sm dark:border-slate-800 dark:bg-slate-900",
+        "relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-2xs transition hover:shadow-xs hover:border-border/80",
         className
       )}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider dark:text-slate-400">
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
           {title}
         </span>
         <div
           className={cn(
-            "flex h-9 w-9 items-center justify-center rounded-lg",
+            "flex h-9 w-9 items-center justify-center rounded-lg shadow-2xs",
             iconVariantStyles[variant]
           )}
         >
@@ -58,17 +59,17 @@ export function StatCard({
       </div>
 
       <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl dark:text-white">
+        <span className="text-2xl font-black tracking-tight text-foreground sm:text-3xl">
           {value}
         </span>
       </div>
 
       {(description || trend) && (
-        <div className="mt-2.5 flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <div className="mt-2.5 flex items-center gap-2 text-xs text-muted-foreground">
           {trend && (
             <span
               className={cn(
-                "inline-flex items-center gap-0.5 font-medium",
+                "inline-flex items-center gap-0.5 font-bold",
                 trend.isPositive
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-rose-600 dark:text-rose-400"
@@ -82,10 +83,9 @@ export function StatCard({
               {trend.value}%
             </span>
           )}
-          {description && <span className="truncate">{description}</span>}
+          {description && <span className="truncate font-medium">{description}</span>}
         </div>
       )}
     </Card>
   );
 }
-
